@@ -426,6 +426,7 @@ useEffect(() => {
   language={language}
   setLanguage={setLanguage}
   onOpenAI={() => setOpenAI(true)}
+  onOpenNotifications={() => handleTabChange("notifications")}
   sidebarOpen={sidebarOpen}
   setSidebarOpen={setSidebarOpen}
 />
