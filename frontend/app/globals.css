@@ -46,7 +46,6 @@ body {
 /* =========================================================
    3. SIDEBAR
    ========================================================= */
-
 .sidebar {
   width: 270px;
   background: linear-gradient(
@@ -56,13 +55,25 @@ body {
     #0f172a 100%
   );
   color: white;
+
   padding: 22px 18px;
+
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+
   position: sticky;
   top: 0;
+
   height: 100vh;
+  max-height: 100vh;
+  min-height: 0;
+
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  flex-shrink: 0;
+
+  scrollbar-width: thin;
 }
 
 .brand-box {
@@ -110,6 +121,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  flex-shrink: 0;
 }
 
 .menu-btn {
@@ -224,27 +236,52 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
+  position: relative;
 
   background: rgba(255,255,255,0.08);
   border: 1px solid rgba(255,255,255,0.12);
   color: #fff;
 }
 
-.notification-badge {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  min-width: 18px;
-  height: 18px;
-  background: #ef4444;
-  color: #ffffff;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 700;
+.notification-bell button {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  margin: 0;
+
   display: flex;
   align-items: center;
   justify-content: center;
+
+  border: none;
+  outline: none;
+  background: transparent;
+  color: inherit;
+
+  cursor: pointer;
+}
+
+.notification-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+
+  min-width: 18px;
+  height: 18px;
   padding: 0 5px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 999px;
+
+  background: #ef4444;
+  color: #ffffff;
+
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .profile-card,
@@ -761,7 +798,6 @@ button.progress-class-card.active-progress-class-card .progress-class-count {
 /* =========================================================
    18. RESPONSIVE STYLES
    ========================================================= */
-
 @media (max-width: 1400px) {
   .analytics-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -774,15 +810,167 @@ button.progress-class-card.active-progress-class-card .progress-class-count {
   .student-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-}
 
-@media (max-width: 900px) {
- .topbar {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  align-items: stretch;
+  /* ================================
+     TOPBAR - 125% / 150% ZOOM FIX
+  ================================= */
+
+  .topbar {
+    display: grid;
+    grid-template-columns: minmax(220px, 260px) minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    column-gap: 14px;
+    row-gap: 14px;
+    width: 100%;
+    min-width: 0;
+    align-items: center;
+  }
+
+  /* Welcome Headmaster card */
+  .profile-card,
+  .profile-box {
+    grid-column: 1;
+    grid-row: 1;
+
+    width: 100%;
+    max-width: 260px;
+    min-width: 0;
+    height: 68px;
+
+    padding: 0 14px;
+    overflow: hidden;
+  }
+
+  .profile-card h3,
+  .profile-box h4 {
+    font-size: 17px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .profile-card p,
+  .profile-box p {
+    font-size: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Right side: AI + Language + Bell + SWAIS */
+  .topbar-right {
+    grid-column: 2;
+    grid-row: 1;
+
+    width: 100%;
+    min-width: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: nowrap;
+    gap: 8px;
+
+    overflow: hidden;
+  }
+
+  .ai-btn {
+    flex: 0 1 auto;
+    min-width: 105px;
+    max-width: 125px;
+    margin: 0;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    justify-content: center;
+  }
+
+  .language-wrapper {
+    flex: 0 1 auto;
+    min-width: 90px;
+    max-width: 110px;
+    margin: 0;
+  }
+
+  .language-btn {
+    width: 100%;
+    min-width: 90px;
+    padding: 0 10px;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .notification-bell {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    flex: 0 0 48px;
+  }
+
+  /* SWAIS logo */
+  .brand {
+    flex: 0 1 auto;
+    min-width: 0;
+
+    display: flex;
+    align-items: center;
+    gap: 7px;
+
+    overflow: hidden;
+  }
+
+  .brand-logo {
+    flex: 0 0 auto;
+  }
+
+  .brand-logo img {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+  }
+
+  .brand-text {
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .brand-text span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .brand-text span:first-child {
+    font-size: 13px;
+  }
+
+  .brand-text span:last-child {
+    font-size: 9px;
+  }
+
+  /* Search goes to second row */
+  .topbar-left {
+    grid-column: 1 / -1;
+    grid-row: 2;
+
+    width: 100%;
+    min-width: 0;
+  }
+
+  .search-box {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .search-input {
+    min-width: 0;
+  }
 }
+@media (max-width: 900px) {
+ 
 
 .topbar-left {
   width: 100%;
@@ -846,6 +1034,7 @@ button.progress-class-card.active-progress-class-card .progress-class-count {
 .logout-wrapper {
   margin-top: auto;
   padding: 16px;
+  flex-shrink: 0;
 }
 
 .logout-btn {
@@ -1182,14 +1371,14 @@ button.progress-class-card.active-progress-class-card .progress-class-count {
 /* Common Topbar Items */
 .topbar-right {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 12px;
 }
 
 .ai-btn,
 .language-wrapper {
-  flex: 1;
+  flex: 0 0 auto;
 }
 
 .ai-btn {
@@ -1476,3 +1665,26 @@ button.progress-class-card.active-progress-class-card .progress-class-count {
   min-width: 760px;
   border-collapse: collapse;
 }
+
+.pie-legend {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  margin-top: 10px;
+}
+
+.pie-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.pie-legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+

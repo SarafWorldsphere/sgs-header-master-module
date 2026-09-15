@@ -69,19 +69,36 @@ export default function DashboardSection({
           </ResponsiveContainer>
         </div>
 
-        <div className="card">
-          <h3>Pass vs Fail Analysis</h3>
+       <div className="card">
+  <h3>Pass vs Fail Analysis</h3>
 
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie data={pieData} dataKey="value" outerRadius={90} label>
-                {pieData.map((entry, index) => (
-                  <Cell key={`pie-${entry.name || index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
+  <ResponsiveContainer width="100%" height={300}>
+    <PieChart>
+      <Pie data={pieData} dataKey="value" outerRadius={90} label>
+        {pieData.map((entry, index) => (
+          <Cell
+            key={`pie-${entry.name || index}`}
+            fill={COLORS[index % COLORS.length]}
+          />
+        ))}
+      </Pie>
+    </PieChart>
+  </ResponsiveContainer>
+
+  <div className="pie-legend">
+    {pieData.map((entry, index) => (
+      <div className="pie-legend-item" key={`legend-${entry.name || index}`}>
+        <span
+          className="pie-legend-color"
+          style={{ backgroundColor: COLORS[index % COLORS.length] }}
+        />
+        <span>
+          {entry.name}: {entry.value}
+        </span>
+      </div>
+    ))}
+  </div>
+</div>
       </div>
     </>
   );

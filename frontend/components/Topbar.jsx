@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   Shield,
   Bell,
@@ -23,10 +24,12 @@ export default function Topbar({
   language,
   setLanguage,
   onOpenAI,
+  onOpenNotifications,
   sidebarOpen,
   setSidebarOpen,
 }) {
 
+  const router = useRouter();
   const { startVoice, listening } = useVoice();
 
   // Language Dropdown
@@ -198,17 +201,22 @@ const handleVoiceInput = () => {
   </div>
 )}
         </div>
+{/* Notification */}
+<div className="notification-bell">
+  <button
+    type="button"
+    onClick={onOpenNotifications}
+    aria-label="Notifications"
+  >
+    <Bell size={18} />
 
-        {/* Notification */}
-        <div className="notification-bell">
-          <Bell size={18} />
-
-          {notificationCount > 0 && (
-            <span className="notification-badge">
-              {notificationCount}
-            </span>
-          )}
-        </div>
+    {notificationCount > 0 && (
+      <span className="notification-badge">
+        {notificationCount}
+      </span>
+    )}
+  </button>
+</div>
       {/* SWAIS Brand */}
 {/* SWAIS Brand */}
 <div className="brand">
