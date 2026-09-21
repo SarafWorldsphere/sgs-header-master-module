@@ -72,6 +72,7 @@ const filteredStudents = students.filter((student) => {
         <th>Name</th>
         <th>Class</th>
         <th>Section</th>
+        <th>Roll No</th>
         <th>Parent</th>
         <th>Mobile</th>
         <th>Email</th>
@@ -90,6 +91,7 @@ const filteredStudents = students.filter((student) => {
             <td>{student.full_name || "-"}</td>
             <td>{student.class_name || "-"}</td>
             <td>{student.section_name || "-"}</td>
+              <td>{student.roll_no || "-"}</td>
             <td>{student.parent_name || "-"}</td>
             <td>{student.mobile_no || "-"}</td>
             <td>{student.email_id || "-"}</td>
