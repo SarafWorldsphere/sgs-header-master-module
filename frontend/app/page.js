@@ -100,6 +100,32 @@ const [originalToursData, setOriginalToursData] = useState([]);
 
     loadDashboard();
   }, []);
+
+
+  // ================= LOAD STUDENTS FOR AI TOOLS =================
+  useEffect(() => {
+    if (openAI && !loaded.students) {
+      const loadStudents = async () => {
+        try {
+          const res = await api.get("/students/");
+          const data = res.data || [];
+
+          setOriginalStudents(data);
+          setStudents(data);
+
+          setLoaded((p) => ({
+            ...p,
+            students: true,
+          }));
+        } catch (err) {
+          console.error("AI Tools Students API Error:", err);
+        }
+      };
+
+      loadStudents();
+    }
+  }, [openAI, loaded.students]);
+  
   // ================= TAB HANDLER =================
   const handleTabChange = async (tab) => {
 
@@ -430,9 +456,10 @@ useEffect(() => {
   sidebarOpen={sidebarOpen}
   setSidebarOpen={setSidebarOpen}
 />
-       <AIToolsModal
-  open={openAI}
+<AIToolsModal 
+  open={openAI} 
   onClose={() => setOpenAI(false)}
+  students={students}
 />
 
 
