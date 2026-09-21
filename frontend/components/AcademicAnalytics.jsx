@@ -5,15 +5,17 @@ import "./AcademicAnalytics.css";
 export default function AcademicAnalytics({
   selectedClass,
   setSelectedClass,
+  selectedSection,
+  setSelectedSection,
+  classOptions,
   student,
   setStudent,
   subject,
   setSubject,
- 
+  subjects,
 }) {
   return (
     <div className="academic-analytics">
-
       <h3>📊 Academic Analytics</h3>
 
       <p className="subtitle">
@@ -21,33 +23,50 @@ export default function AcademicAnalytics({
       </p>
 
       <div className="analytics-filters">
-
-        {/* Class */}
+        {/* Class + Section */}
         <div className="field">
           <label>Class</label>
 
           <select
-            value={selectedClass}
-            onChange={(e) => setSelectedClass(e.target.value)}
+            value={
+              selectedClass && selectedSection
+                ? `${selectedClass}|${selectedSection}`
+                : ""
+            }
+            onChange={(e) => {
+              const [className, sectionName] =
+                e.target.value.split("|");
+
+              setSelectedClass(className || "");
+              setSelectedSection(sectionName || "");
+            }}
           >
             <option value="">Select Class</option>
-            <option>6th Grade</option>
-            <option>7th Grade</option>
-            <option>8th Grade</option>
-            <option>9th Grade</option>
-            <option>10th Grade</option>
+
+            {classOptions?.map((item) => (
+              <option
+                key={`${item.class_name}|${item.section_name}`}
+                value={`${item.class_name}|${item.section_name}`}
+              >
+                {item.class_name} - {item.section_name}
+              </option>
+            ))}
           </select>
         </div>
 
-        {/* Student */}
+        {/* Roll Number */}
         <div className="field">
-          <label>Student</label>
+          <label>Roll Number</label>
 
           <input
             type="text"
-            placeholder="Enter student name"
+            inputMode="numeric"
+            placeholder="Enter roll number"
             value={student}
-            onChange={(e) => setStudent(e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value.replace(/\D/g, "");
+              setStudent(value);
+            }}
           />
         </div>
 
@@ -58,25 +77,27 @@ export default function AcademicAnalytics({
           <select
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
+            disabled={!selectedClass}
           >
             <option value="All Subjects">All Subjects</option>
-            <option value="Mathematics">Mathematics</option>
-            <option value="Science">Science</option>
-            <option value="English">English</option>
-            <option value="Social">Social</option>
-            <option value="Computer">Computer</option>
+
+            {subjects?.map((subjectName) => (
+              <option key={subjectName} value={subjectName}>
+                {subjectName}
+              </option>
+            ))}
           </select>
         </div>
-
       </div>
-       <div className="analytics-placeholder">
-  <h4>Ready to Generate</h4>
-  <p>
-    Enter the student details and click <strong>Generate Report</strong> from
-    the left panel.
-  </p>
-</div>
 
+      <div className="analytics-placeholder">
+        <h4>Ready to Generate</h4>
+
+        <p>
+          Enter the student details and click{" "}
+          <strong>Generate Report</strong> from the left panel.
+        </p>
+      </div>
     </div>
   );
 }

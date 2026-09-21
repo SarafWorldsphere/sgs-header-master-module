@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Literal
+from typing import Literal, Optional
 
 
 # =========================
@@ -22,11 +22,13 @@ class AssignmentReportRequest(BaseModel):
 # 2. ACADEMIC ANALYTICS
 # =========================
 class AcademicAnalyticsRequest(BaseModel):
-    target_name: str = Field(..., min_length=1, max_length=100)
     target_type: Literal["student", "class"]
     scope: Literal["single_subject", "all_subjects"]
+    class_name: str = Field(...)
+    section_name: str = Field(...)
+    roll_no: Optional[str] = Field(None, description="Required for specific student")
+    subject_name: Optional[str] = Field(None, description="Required for single subject")
     user_info: UserInfo
-
 
 # =========================
 # 3. TEACHER PERFORMANCE

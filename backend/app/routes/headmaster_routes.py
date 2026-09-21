@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 
@@ -8,7 +8,9 @@ from app.controllers.headmaster_controller import (
     get_assignment_report,
     get_academic_analytics,
     get_teacher_performance,
-    translate_for_headmaster
+    translate_for_headmaster,
+     get_class_student_count,
+     get_academic_analytics_subjects
 )
 
 from app.schemas.headmaster_schema import (
@@ -74,6 +76,27 @@ def assignment(
 # ==================================================
 # ACADEMIC ANALYTICS
 # ==================================================
+
+# ✅ NEW: Route to get the total number of students
+@router.get("/academic-analytics/student-count")
+def get_student_count(
+    class_name: str = Query(...),
+    section_name: str = Query(...),
+    db: Session = Depends(get_db)
+):
+    # Call the new function from controller
+    return get_class_student_count(db, class_name, section_name)
+
+# GET: Available subjects for selected class
+@router.get("/academic-analytics/subjects")
+def get_subjects(
+    class_name: str = Query(...),
+    db: Session = Depends(get_db)
+):
+    return get_academic_analytics_subjects(db, class_name)
+
+
+# ✅ EXISTING: Route to generate AI report
 @router.post("/academic-analytics")
 def academic(
     payload: AcademicAnalyticsRequest,
