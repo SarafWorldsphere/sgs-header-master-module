@@ -3,7 +3,7 @@
 import "./AIToolsModal.css";
 import AcademicAnalytics from "./AcademicAnalytics";
 import ReportPanel from "./ReportPanel";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 
 import {
@@ -31,7 +31,12 @@ const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
 });
 
-export default function AIToolsModal({ open, onClose, headmaster }) {
+export default function AIToolsModal({
+  open,
+  onClose,
+  headmaster,
+  students = [],
+}) {
   // =======================
   // ALL HOOKS FIRST (FIX)
   // =======================
@@ -41,10 +46,52 @@ export default function AIToolsModal({ open, onClose, headmaster }) {
   const [analyticsData, setAnalyticsData] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const [student, setStudent] = useState("");
-  const [subject, setSubject] = useState("All Subjects");
-  const [selectedClass, setSelectedClass] = useState("");
-  
+ const [student, setStudent] = useState("");
+const [subject, setSubject] = useState("All Subjects");
+const [selectedClass, setSelectedClass] = useState("");
+const [selectedSection, setSelectedSection] = useState("");
+const [subjects, setSubjects] = useState([]);
+
+const classOptions = [
+  ...new Map(
+    students
+      .filter(
+        (student) => student.class_name && student.section_name
+      )
+      .map((student) => [
+        `${student.class_name}|${student.section_name}`,
+        {
+          class_name: student.class_name,
+          section_name: student.section_name,
+        },
+      ])
+  ).values(),
+];
+
+useEffect(() => {
+  const fetchSubjects = async () => {
+    if (!selectedClass) {
+      setSubjects([]);
+      return;
+    }
+
+    try {
+      const res = await api.get(
+        `/headmaster/academic-analytics/subjects?class_name=${encodeURIComponent(
+          selectedClass
+        )}`
+      );
+
+      setSubjects(res.data.subjects || []);
+    } catch (error) {
+      console.error("Failed to fetch subjects:", error);
+      setSubjects([]);
+    }
+  };
+
+  fetchSubjects();
+}, [selectedClass]);
+
   const [language, setLanguage] = useState("English");
   const [originalReport, setOriginalReport] = useState("");
   const [isTranslating, setIsTranslating] = useState(false);
@@ -84,27 +131,35 @@ export default function AIToolsModal({ open, onClose, headmaster }) {
       } 
       else if (selectedReport === "analytics") {
         if (!student.trim()) {
-          alert("Please enter student name.");
+         alert("Please enter student name.");
           setLoading(false);
           return;
         }
 
-        const res = await api.post("/headmaster/academic-analytics", {
-          target_name: student.trim(),
-          target_type: "student",
-          class_name: selectedClass,
-          subject: subject,
-          scope: subject === "All Subjects" ? "all_subjects" : "single_subject",
-          user_info: payload.user_info,
-        });
+const res = await api.post("/headmaster/academic-analytics", {
+  roll_no: student.trim(),
+  target_type: "student",
+  class_name: selectedClass,
+  section_name: selectedSection,
+  subject_name: subject,
+  scope: subject === "All Subjects" ? "all_subjects" : "single_subject",
+  user_info: payload.user_info,
+});
 
-      setAnalyticsData(res.data);
-setOriginalReport(JSON.stringify(res.data.analysis));
+      setAnalyticsData(res.data);setOriginalReport(
+  JSON.stringify({
+    trend: res.data.trend,
+    strengths: res.data.strengths,
+    weaknesses: res.data.weaknesses,
+    recommendations: res.data.recommendations,
+  })
+);
+
 setReport("");
       }
     } catch (err) {
       console.error(err);
-      setReport("Failed to generate report.");
+      setReport("Failed to generatae report.");
     } finally {
       setLoading(false);
     }
@@ -176,14 +231,13 @@ textToTranslate = JSON.stringify(analyticsData.analysis);
   // =======================
   // SAFE DATA HANDLING
   // =======================
-  const analysis = analyticsData?.analysis || {};
-
-  const chartData = Array.isArray(analyticsData?.chartData)
-    ? analyticsData.chartData.map((item) => ({
-        subject: item.subject ?? item.test ?? item.student ?? "Unknown",
-        score: Number(item.score) || 0,
-      }))
-    : [];
+  
+const chartData = Array.isArray(analyticsData?.data)
+  ? analyticsData.data.map((item) => ({
+      subject: item.subject ?? item.test ?? item.student ?? "Unknown",
+      score: Number(item.score) || 0,
+    }))
+  : [];
 
   return (
     <div className="ai-modal-overlay">
@@ -302,14 +356,18 @@ textToTranslate = JSON.stringify(analyticsData.analysis);
   {selectedReport === "analytics" && (
     <>
       {!analyticsData && (
-        <AcademicAnalytics
-          selectedClass={selectedClass}
-          setSelectedClass={setSelectedClass}
-          student={student}
-          setStudent={setStudent}
-          subject={subject}
-          setSubject={setSubject}
-        />
+       <AcademicAnalytics
+  selectedClass={selectedClass}
+  setSelectedClass={setSelectedClass}
+  selectedSection={selectedSection}
+  setSelectedSection={setSelectedSection}
+  classOptions={classOptions}
+  student={student}
+  setStudent={setStudent}
+  subject={subject}
+  setSubject={setSubject}
+  subjects={subjects}
+/>
       )}
 
       {analyticsData && (
@@ -317,26 +375,48 @@ textToTranslate = JSON.stringify(analyticsData.analysis);
           <h3 className="analytics-title">
             📊 Academic Analytics
           </h3>
+          {analyticsData.data?.length > 0 && (
+  <div className="student-info">
+    <p>
+      <strong>Student:</strong>{" "}
+      {analyticsData.data[0].student_name}
+    </p>
 
-          <h4 className="chart-title">
-            AI Analysis
-          </h4>
+    <p>
+      <strong>Roll No:</strong>{" "}
+      {analyticsData.data[0].roll_no}
+    </p>
+  </div>
+)}
 
-          <div className="analysis-container">
+         {analyticsData.data?.length === 0 ? (
+  <div className="analysis-container">
+    <p>
+      {analyticsData.message ||
+        "No academic data found for the selected criteria"}
+    </p>
+  </div>
+) : (
+  <>
+    <h4 className="chart-title">
+      AI Analysis
+    </h4>
 
-            <h4>Trend</h4>
-            <p>{analysis.trend}</p>
+    <div className="analysis-container">
+      <h4>Trend</h4>
+      <p>{analyticsData.trend}</p>
 
-            <h4>Strengths</h4>
-            <p>{analysis.strengths}</p>
+      <h4>Strengths</h4>
+      <p>{analyticsData.strengths}</p>
 
-            <h4>Weaknesses</h4>
-            <p>{analysis.weaknesses}</p>
+      <h4>Weaknesses</h4>
+      <p>{analyticsData.weaknesses}</p>
 
-            <h4>Recommendations</h4>
-            <p>{analysis.recommendations}</p>
-
-          </div>
+      <h4>Recommendations</h4>
+      <p>{analyticsData.recommendations}</p>
+    </div>
+  </>
+)}
 
           <h4 className="chart-title">
             📊 Performance Overview
