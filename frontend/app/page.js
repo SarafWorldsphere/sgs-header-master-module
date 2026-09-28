@@ -167,19 +167,21 @@ const [originalToursData, setOriginalToursData] = useState([]);
   setLoaded((p) => ({ ...p, students: true }));
 }
 
-      // ================= TEACHERS =================
-     if (tab === "teachers" && !loaded.teachers) {
+// ================= TEACHERS =================
+if (tab === "teachers" && !loaded.teachers) {
 
   const res = await api.get("/teachers/");
 
   const data = res.data || [];
+
+  console.log("TEACHERS API RESPONSE:", data);
+  console.log("TEACHERS API COUNT:", data.length);
 
   setOriginalTeachers(data);
   setTeachers(data);
 
   setLoaded((p) => ({ ...p, teachers: true }));
 }
-
       // ================= PROGRESS =================
       if (tab === "progress" && !loaded.progress) {
         const res = await api.get("/students/progress");

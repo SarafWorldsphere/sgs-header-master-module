@@ -5,16 +5,25 @@ from app.database import get_db
 
 router = APIRouter()
 
+
 @router.get("/")
 def get_tours(db: Session = Depends(get_db)):
 
     query = """
-        SELECT tour_id, tour_name, location_name,
-               tour_date, incharge_name, students_count
-        FROM sgs_school_tours
+        SELECT
+            event_id,
+            event_title,
+            event_description,
+            event_date,
+            event_type,
+            applicable_class,
+            record_status
+        FROM sgs_events
         WHERE record_status = 'Active'
-        ORDER BY tour_id DESC;
+          AND event_type = 'tour'
+        ORDER BY event_id DESC;
     """
 
     result = db.execute(text(query)).mappings().all()
+
     return [dict(r) for r in result]
