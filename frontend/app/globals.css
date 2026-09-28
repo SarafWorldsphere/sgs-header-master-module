@@ -1688,3 +1688,182 @@ button.progress-class-card.active-progress-class-card .progress-class-count {
   display: inline-block;
 }
 
+
+/* ================= STUDENT VIEW POPUP ================= */
+
+.student-view-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+
+  width: 100vw !important;
+  height: 100vh !important;
+
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  padding: 20px !important;
+  margin: 0 !important;
+
+  box-sizing: border-box !important;
+
+  background: rgba(0, 0, 0, 0.65) !important;
+
+  z-index: 999999 !important;
+}
+
+.student-view-modal {
+  position: relative !important;
+
+  width: 620px !important;
+  max-width: 92vw !important;
+  max-height: 80vh !important;
+
+  margin: 0 !important;
+  padding: 22px !important;
+
+  overflow-y: auto !important;
+
+  box-sizing: border-box !important;
+
+  background: #111025 !important;
+  color: #ffffff !important;
+
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 14px !important;
+
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5) !important;
+}
+
+
+/* ================= HEADER ================= */
+
+.student-view-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.student-view-header h2 {
+  margin: 0;
+
+  color: #ffffff;
+  font-size: 21px;
+}
+
+.student-view-header button {
+  width: 32px;
+  height: 32px;
+
+  border: none;
+  border-radius: 6px;
+
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.student-view-header button:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+
+/* ================= STUDENT & PARENT DETAILS ================= */
+
+.student-basic-details,
+.parent-details {
+  background: rgba(255, 255, 255, 0.04);
+
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 10px;
+
+  padding: 16px;
+  margin-bottom: 14px;
+}
+
+.student-basic-details h3,
+.parent-details h3 {
+  margin: 0 0 12px;
+
+  color: #ffffff;
+  font-size: 16px;
+}
+
+.student-basic-details p,
+.parent-details p {
+  margin: 7px 0;
+
+  color: #d1d5db;
+  font-size: 14px;
+}
+
+.student-basic-details strong,
+.parent-details strong {
+  color: #ffffff;
+}
+
+
+/* ================= LOADING ================= */
+
+.student-view-loading {
+  padding: 35px;
+
+  text-align: center;
+
+  color: #d1d5db;
+}
+
+
+/* ================= CLOSE BUTTON ================= */
+
+.student-view-modal > button {
+  background: #2563eb;
+  color: #ffffff;
+
+  border: none;
+  border-radius: 6px;
+
+  padding: 8px 18px;
+
+  font-size: 13px;
+
+  cursor: pointer;
+}
+
+.student-view-modal > button:hover {
+  background: #1d4ed8;
+}
+
+
+/* ================= VIEW BUTTON ================= */
+
+.student-view-btn {
+  background: #2563eb !important;
+  color: #ffffff !important;
+
+  border: none !important;
+  border-radius: 6px !important;
+
+  padding: 6px 14px !important;
+
+  font-size: 13px;
+  font-weight: 500;
+
+  cursor: pointer;
+
+  transition: background 0.2s ease;
+}
+
+.student-view-btn:hover {
+  background: #1d4ed8 !important;
+}

@@ -19,20 +19,76 @@ def get_students(db: Session = Depends(get_db)):
             c.class_name,
             s.section AS section_name,
             s.roll_no,
-            COALESCE(p.full_name, '-') AS parent_name,
-            COALESCE(p.phone, s.student_phone, '-') AS mobile_no,
+            s.student_phone,
             s.student_email AS email_id,
             s.record_status
         FROM sgs_student_master s
-        LEFT JOIN sgs_class_master c ON s.class_id = c.class_id
-        LEFT JOIN sgs_parent_student_map spm ON s.student_id = spm.student_id
-        LEFT JOIN sgs_parent_master p ON spm.parent_id = p.parent_id
+        LEFT JOIN sgs_class_master c
+            ON s.class_id = c.class_id
         WHERE s.record_status = 'Active'
         ORDER BY s.student_id;
     """
 
     result = db.execute(text(query)).mappings().all()
     return [dict(row) for row in result]
+
+
+
+@router.get("/{student_id}")
+def get_student_details(
+    student_id: int,
+    db: Session = Depends(get_db)
+):
+
+    student_query = """
+        SELECT
+            s.student_id,
+            s.admission_no,
+            s.full_name,
+            c.class_name,
+            s.section AS section_name,
+            s.roll_no,
+            s.student_phone,
+            s.student_email AS email_id,
+            s.record_status
+        FROM sgs_student_master s
+        LEFT JOIN sgs_class_master c
+            ON s.class_id = c.class_id
+        WHERE s.student_id = :student_id;
+    """
+
+    student = db.execute(
+        text(student_query),
+        {"student_id": student_id}
+    ).mappings().first()
+
+    if not student:
+        return {"message": "Student not found"}
+
+    parent_query = """
+        SELECT
+            spm.id,
+            spm.relationship_type,
+            p.parent_id,
+            p.full_name,
+            p.phone,
+            p.email
+        FROM sgs_parent_student_map spm
+        LEFT JOIN sgs_parent_master p
+            ON spm.parent_id = p.parent_id
+        WHERE spm.student_id = :student_id
+        ORDER BY spm.id;
+    """
+
+    parents = db.execute(
+        text(parent_query),
+        {"student_id": student_id}
+    ).mappings().all()
+
+    return {
+        "student": dict(student),
+        "parents": [dict(parent) for parent in parents]
+    }
 
 
 # ===================== PROGRESS =====================
