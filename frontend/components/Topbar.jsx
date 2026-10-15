@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import {
   Shield,
   Bell,
@@ -14,8 +13,9 @@ import {
   Bot,
   Menu,
 } from "lucide-react";
+
 import useVoice from "../hooks/useVoice";
-import Image from "next/image";
+
 export default function Topbar({
   headmaster,
   searchText,
@@ -28,20 +28,16 @@ export default function Topbar({
   sidebarOpen,
   setSidebarOpen,
 }) {
-
-  const router = useRouter();
   const { startVoice, listening } = useVoice();
 
-  // Language Dropdown
- 
   const [showLangMenu, setShowLangMenu] = useState(false);
-
   const langRef = useRef(null);
-const languages = [
-  { label: "English", value: "English" },
-  { label: "తెలుగు", value: "Telugu" },
-  { label: "हिन्दी", value: "Hindi" },
-];
+
+  const languages = [
+    { label: "English", value: "English" },
+    { label: "తెలుగు", value: "Telugu" },
+    { label: "हिन्दी", value: "Hindi" },
+  ];
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -69,47 +65,53 @@ const languages = [
     window.speechSynthesis.speak(utterance);
   };
 
-const handleVoiceInput = () => {
-  startVoice((text) => {
-    if (!text) return;
+  const handleVoiceInput = () => {
+    startVoice((text) => {
+      if (!text) return;
 
-    setSearchText("");
+      setSearchText("");
 
-    let i = 0;
+      let i = 0;
 
-    const interval = setInterval(() => {
-      setSearchText(text.slice(0, i));
-      i++;
+      const interval = setInterval(() => {
+        setSearchText(text.slice(0, i));
+        i++;
 
-      if (i > text.length) clearInterval(interval);
-    }, 12);
-  });
-};
+        if (i > text.length) {
+          clearInterval(interval);
+        }
+      }, 12);
+    });
+  };
 
   return (
-    
     <div className="topbar">
+      {/* Mobile Menu */}
       <button
-  className="mobile-menu-btn"
-  onClick={() => setSidebarOpen(!sidebarOpen)}
-  type="button"
->
-  <Menu size={24} />
-</button>
-        {/* Profile */}
-        <div className="profile-card">
-          <Shield size={22} />
+        className="mobile-menu-btn"
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+        type="button"
+        aria-label="Open menu"
+      >
+        <Menu size={24} />
+      </button>
 
-          <div>
-<h3>
-  Welcome {headmaster?.name || "Headmaster"}
-</h3>
-<p>
-  {headmaster?.role || "Headmaster Access"}
-</p>
-          </div>
+      {/* Profile */}
+      <div className="profile-card">
+        <Shield size={22} />
+
+        <div className="profile-content">
+          <h3>
+            Welcome {headmaster?.name || "Headmaster"}
+          </h3>
+
+          <p>
+            {headmaster?.role || "Headmaster Access"}
+          </p>
         </div>
-      {/* LEFT */}
+      </div>
+
+      {/* Search */}
       <div className="topbar-left">
         <div className="search-box">
           <div className="search-icon">
@@ -125,18 +127,17 @@ const handleVoiceInput = () => {
           />
 
           <div className="search-actions">
+            {/* Speak */}
             <button
               className="speak-btn"
               onClick={() => speakText(searchText)}
               title="Speak text"
               type="button"
             >
-             <Volume2
-  size={16}
-  stroke="#cbd5e1"
-/>
+              <Volume2 size={16} />
             </button>
 
+            {/* Voice Input */}
             <button
               className={`mic-btn ${listening ? "active" : ""}`}
               onClick={handleVoiceInput}
@@ -149,16 +150,17 @@ const handleVoiceInput = () => {
         </div>
       </div>
 
-      {/* RIGHT */}
+      {/* Right Controls */}
       <div className="topbar-right">
-      <button
-  className="ai-btn"
-  onClick={onOpenAI}
-  type="button"
->
-  <Bot size={18} />
-  <span>AI Tools</span>
-</button>
+        {/* AI Tools */}
+        <button
+          className="ai-btn"
+          onClick={onOpenAI}
+          type="button"
+        >
+          <Bot size={18} />
+          <span>AI Tools</span>
+        </button>
 
         {/* Language */}
         <div className="language-wrapper" ref={langRef}>
@@ -169,9 +171,11 @@ const handleVoiceInput = () => {
           >
             <Languages size={18} />
 
-           <span>
-  {languages.find((lang) => lang.value === language)?.label || language}
-</span>
+            <span>
+              {languages.find(
+                (lang) => lang.value === language
+              )?.label || language}
+            </span>
 
             <ChevronDown
               size={16}
@@ -179,63 +183,59 @@ const handleVoiceInput = () => {
             />
           </button>
 
-    {showLangMenu && (
-  <div className="language-dropdown">
-    {languages.map((lang) => (
-      <button
-        key={lang.value}
-        type="button"
-        className={`language-item ${
-          language === lang.value ? "selected" : ""
-        }`}
-        onClick={() => {
-        setLanguage(lang.value.trim());
-          setShowLangMenu(false);
-        }}
-      >
-        <span>{lang.label}</span>
+          {showLangMenu && (
+            <div className="language-dropdown">
+              {languages.map((lang) => (
+                <button
+                  key={lang.value}
+                  type="button"
+                  className={`language-item ${
+                    language === lang.value ? "selected" : ""
+                  }`}
+                  onClick={() => {
+                    setLanguage(lang.value);
+                    setShowLangMenu(false);
+                  }}
+                >
+                  <span>{lang.label}</span>
 
-        {language === lang.value && <Check size={16} />}
-      </button>
-    ))}
-  </div>
-)}
+                  {language === lang.value && (
+                    <Check size={16} />
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
-{/* Notification */}
-<div className="notification-bell">
-  <button
-    type="button"
-    onClick={onOpenNotifications}
-    aria-label="Notifications"
-  >
-    <Bell size={18} />
 
-    {notificationCount > 0 && (
-      <span className="notification-badge">
-        {notificationCount}
-      </span>
-    )}
-  </button>
-</div>
-      {/* SWAIS Brand */}
-{/* SWAIS Brand */}
-<div className="brand">
-  <div className="brand-logo">
-    <img
-      src="/headmaster/swais-logo.jpeg"
-      alt="SWAIS Logo"
-      width="50"
-      height="50"
-    />
-  </div>
+        {/* Notifications */}
+        <div className="notification-bell">
+          <button
+            type="button"
+            onClick={onOpenNotifications}
+            aria-label="Notifications"
+          >
+            <Bell size={18} />
 
-  <div className="brand-text">
-    <span>SWAIS</span>
-    <span>SARASWATI</span>
-  </div>
-</div>
-       
+            {notificationCount > 0 && (
+              <span className="notification-badge">
+                {notificationCount}
+              </span>
+            )}
+          </button>
+        </div>
 
+        {/* School Logo */}
+        <div className="brand">
+          <div className="brand-logo">
+            <img
+              src="/headmaster/swais-logo.jpeg"
+              alt="School Logo"
+              width="50"
+              height="50"
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

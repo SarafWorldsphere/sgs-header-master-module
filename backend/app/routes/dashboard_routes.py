@@ -11,7 +11,13 @@ DASHBOARD_QUERY = """
 WITH
 summary AS (
     SELECT
-        (SELECT COUNT(*) FROM sgs_student_master WHERE record_status = 'Active') AS total_students,
+       (
+    SELECT COUNT(*)
+    FROM sgs_student_master
+    WHERE record_status = 'Active'
+      AND full_name IS NOT NULL
+      AND full_name != ''
+) AS total_students,
         (SELECT COUNT(*) FROM sgs_teacher_master WHERE is_active = TRUE) AS total_teachers,
         (SELECT COUNT(*) FROM sgs_class_master WHERE record_status = 'Active') AS total_classes,
         (SELECT ROUND(AVG(marks_obtained), 2)
