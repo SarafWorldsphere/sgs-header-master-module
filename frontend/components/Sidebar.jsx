@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Home,
@@ -10,6 +10,7 @@ import {
   MapPinned,
   UserCheck,
   LogOut,
+  Activity,
 } from "lucide-react";
 import Image from "next/image";
 import LogoutModal from "@/components/LogoutModal";
@@ -21,7 +22,7 @@ export default function Sidebar({
 }) {
   const router = useRouter();
 
-  // ✅ ADD STATE FOR MODAL
+  // âœ… ADD STATE FOR MODAL
   const [showLogout, setShowLogout] = useState(false);
 
   const menuItems = [
@@ -33,12 +34,13 @@ export default function Sidebar({
     { id: "functions", label: "Functions", icon: CalendarDays },
     { id: "tours", label: "Tours", icon: MapPinned },
     { id: "classTeachers", label: "Class Teachers", icon: UserCheck },
+    { id: "platformActivity", label: "Platform Activity", icon: Activity },
 
     // logout item stays same
     { id: "logout", label: "Logout", icon: LogOut, danger: true },
   ];
 
-  // ✅ LOGOUT LOGIC
+  // âœ… LOGOUT LOGIC
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("role");
@@ -53,10 +55,15 @@ export default function Sidebar({
 
   const handleClick = (item) => {
     if (item.id === "logout") {
-      setShowLogout(true); // ✅ open modal instead of confirm
+      setShowLogout(true); // âœ… open modal instead of confirm
       return;
     }
 
+   if (item.id === "platformActivity") {
+     router.push("/platform-activity");
+     if (window.innerWidth <= 900) onClose();
+     return;
+   }
    setActiveTab(item.id);
 
 if (window.innerWidth <= 900) {
@@ -112,7 +119,7 @@ if (window.innerWidth <= 900) {
   />
 )}
 
-      {/* ✅ LOGOUT MODAL (ADD HERE - OUTSIDE SIDEBAR DIV) */}
+      {/* âœ… LOGOUT MODAL (ADD HERE - OUTSIDE SIDEBAR DIV) */}
       <LogoutModal
         open={showLogout}
         onCancel={() => setShowLogout(false)}
@@ -121,3 +128,5 @@ if (window.innerWidth <= 900) {
     </>
   );
 }
+
+
