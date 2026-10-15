@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import useAuthGuard from "@/hooks/useAuthGuard";
 import axios from "axios";
 
@@ -11,6 +11,7 @@ import AIToolsModal from "../components/AIToolsModal";
 import DashboardSection from "../components/DashboardSection";
 import StudentsSection from "../components/StudentsSection";
 import TeachersSection from "../components/TeachersSection";
+import ReportsSection from "../components/ReportsSection";
 import ProgressSection from "../components/ProgressSection";
 import NotificationsSection from "../components/NotificationsSection";
 import FunctionsSection from "../components/FunctionsSection";
@@ -36,6 +37,28 @@ export default function HomePage() {
   const [originalStudents, setOriginalStudents] = useState([]);
  const [teachers, setTeachers] = useState([]);
 const [originalTeachers, setOriginalTeachers] = useState([]);
+
+
+const fetchTeachersForFilter = useCallback(
+  async (teacherType, subject = "") => {
+    const params = new URLSearchParams();
+    params.set("teacher_type", teacherType);
+
+    if (subject) {
+      params.set("subject", subject);
+    }
+
+    const res = await api.get(`/teachers/?${params.toString()}`);
+    return res.data || [];
+  },
+  []
+);
+
+const fetchTeacherSubjects = useCallback(async () => {
+  const res = await api.get("/teachers/subjects");
+  return res.data || [];
+}, []);
+
 
 const [progressData, setProgressData] = useState([]);
 const [originalProgressData, setOriginalProgressData] = useState([]);
@@ -489,18 +512,22 @@ useEffect(() => {
   />
 )}
 
-        {activeTab === "teachers" && (
-          <TeachersSection
-            teachers={searchItems(teachers, [
-              "full_name",
-              "subject_name",
-              "teacher_id",
-              "role",
-              "email_id",
-              "phone",
-            ])}
-          />
-        )}
+ 
+{activeTab === "teachers" && (
+  <TeachersSection
+    teachers={searchItems(teachers, [
+      "full_name",
+      "subject_name",
+      "teacher_id",
+      "role",
+      "email_id",
+      "phone",
+    ])}
+    fetchTeachers={fetchTeachersForFilter}
+    fetchSubjects={fetchTeacherSubjects}
+  />
+)}
+
 
         {activeTab === "progress" && (
           <ProgressSection
@@ -513,6 +540,9 @@ useEffect(() => {
             ])}
           />
         )}
+        {activeTab === "reports" && (
+  <ReportsSection />
+)}
         {activeTab === "notifications" && (
         <NotificationsSection
         notifications={searchItems(notifications, [
