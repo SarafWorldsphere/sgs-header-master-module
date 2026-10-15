@@ -1,4 +1,9 @@
 fastapi==0.115.6
 uvicorn[standard]==0.34.0
 psycopg[binary]==3.3.4
-sqlalchemy, psycopg2-binary, python-dotenv, google-genai ,pydantic-settings
+
+sqlalchemy
+psycopg2-binary
+python-dotenv
+google-genai
+pydantic-settings
