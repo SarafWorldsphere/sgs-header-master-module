@@ -12,10 +12,46 @@ import styles from "./page.module.css";
 import Sidebar from "@/components/Sidebar";
 import { useRouter } from "next/navigation";
 
+const platformActivityRequestQueue = (() => {
+  const pending = [];
+  let active = 0;
+  const maxConcurrent = 2;
+
+  const drain = () => {
+    while (active < maxConcurrent && pending.length > 0) {
+      const { task, resolve, reject } = pending.shift();
+      active += 1;
+
+      Promise.resolve()
+        .then(task)
+        .then(resolve, reject)
+        .finally(() => {
+          active -= 1;
+          drain();
+        });
+    }
+  };
+
+  return (task) =>
+    new Promise((resolve, reject) => {
+      pending.push({ task, resolve, reject });
+      drain();
+    });
+})();
+
 const api = axios.create({
-  baseURL: "http://127.0.0.1:8000",
+  adapter: (config) =>
+    platformActivityRequestQueue(() =>
+      axios.getAdapter("xhr")(config)
+    ),
+  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
   timeout: 30000,
 });
+
+
+
+
+
 
 const roles = [
   { id: "all", label: "Overview" },
@@ -89,45 +125,18 @@ export default function PlatformActivityPage() {
   const [refreshing, setRefreshing] = useState(false);
 
   const loadOverview = useCallback(async () => {
-    const results = await Promise.allSettled([
-      api.get("/headmaster/platform-activity"),
-      api.get("/headmaster/platform-activity/classes"),
-      api.get(`/headmaster/platform-activity/feature-usage?days=${featureDays}`),
-      api.get("/headmaster/platform-activity/recent-events?limit=20&days=7&include_test_data=false"),
-    ]);
-
-    const [summaryResult, classesResult, featuresResult, eventsResult] = results;
-    const errors = [];
-
-    if (summaryResult.status === "fulfilled") {
-      const data = summaryResult.value.data || {};
+    try {
+      const response = await api.get("/headmaster/platform-activity");
+      const data = response.data || {};
       setSummary(data.summary || {});
       setRoleStats(data.role_wise_activity || []);
-    } else {
-      errors.push("Activity summary: " + errorMessage(summaryResult.reason));
+      return [];
+    } catch (e) {
+      const errors = ["Activity summary: " + errorMessage(e)];
+      setError(errors.join(" | "));
+      return errors;
     }
-
-    if (classesResult.status === "fulfilled") {
-      setClasses(getRows(classesResult.value.data, "classes"));
-    } else {
-      errors.push("Classes: " + errorMessage(classesResult.reason));
-    }
-
-    if (featuresResult.status === "fulfilled") {
-      setFeatures(getRows(featuresResult.value.data, "features"));
-    } else {
-      errors.push("AI feature usage: " + errorMessage(featuresResult.reason));
-    }
-
-    if (eventsResult.status === "fulfilled") {
-      setEvents(getRows(eventsResult.value.data, "events"));
-    } else {
-      errors.push("Recent events: " + errorMessage(eventsResult.reason));
-    }
-
-    setError(errors.join(" | "));
-    return errors;
-  }, [featureDays]);
+  }, []);
 
   const loadUsers = useCallback(async () => {
     if (userRole === "all") {
@@ -137,10 +146,7 @@ export default function PlatformActivityPage() {
 
     setUsersLoading(true);
     try {
-      const params = new URLSearchParams({
-        role: userRole,
-        days: "7",
-      });
+      const params = new URLSearchParams({ role: userRole, days: "7" });
       if (["student", "parent"].includes(userRole) && className) {
         params.set("class_name", className);
       }
@@ -160,37 +166,16 @@ export default function PlatformActivityPage() {
     }
   }, [userRole, className, section]);
 
-  
   const loadRoleUserCounts = useCallback(async () => {
-    const roleList = ["student", "parent", "faculty", "headmaster"];
-
     try {
-      const results = await Promise.all(
-        roleList.map(async (role) => {
-          const response = await api.get(
-            `/headmaster/platform-activity/users?role=${role}&days=7`
-          );
-          const rows = getRows(response.data, "users");
-
-          return {
-            role,
-            total: rows.length,
-            active: rows.filter(
-              (user) => Number(user.logins_in_period || 0) > 0
-            ).length,
-            inactive: rows.filter(
-              (user) => Number(user.logins_in_period || 0) === 0
-            ).length,
-          };
-        })
+      const response = await api.get(
+        "/headmaster/platform-activity/user-counts?days=7"
       );
-
-      setRoleUserCounts(results);
+      setRoleUserCounts(getRows(response.data, "counts"));
     } catch (e) {
       setError("Role user counts: " + errorMessage(e));
     }
   }, []);
-
 
   const loadInactive = useCallback(async () => {
     setInactiveLoading(true);
@@ -218,32 +203,77 @@ export default function PlatformActivityPage() {
     }
   }, [inactiveRole, inactiveDays, className, section]);
 
+  const loadRemainingOverview = useCallback(async () => {
+    const errors = [];
+
+    try {
+      const response = await api.get("/headmaster/platform-activity/classes");
+      setClasses(getRows(response.data, "classes"));
+    } catch (e) {
+      errors.push("Classes: " + errorMessage(e));
+    }
+
+    try {
+      const response = await api.get(
+        "/headmaster/platform-activity/recent-events?limit=20&days=7&include_test_data=false"
+      );
+      setEvents(getRows(response.data, "events"));
+    } catch (e) {
+      errors.push("Recent events: " + errorMessage(e));
+    }
+
+    try {
+      const response = await api.get(
+        `/headmaster/platform-activity/feature-usage?days=${featureDays}`
+      );
+      setFeatures(getRows(response.data, "features"));
+    } catch (e) {
+      errors.push("AI feature usage: " + errorMessage(e));
+    }
+
+    if (errors.length) {
+      setError((previous) =>
+        [previous, ...errors].filter(Boolean).join(" | ")
+      );
+    }
+  }, [featureDays]);
+
+  const loadDashboardSequence = useCallback(async () => {
+    setError("");
+    await loadOverview();
+    await loadUsers();
+    await loadRoleUserCounts();
+    await loadInactive();
+    await loadRemainingOverview();
+  }, [
+    loadOverview,
+    loadUsers,
+    loadRoleUserCounts,
+    loadInactive,
+    loadRemainingOverview,
+  ]);
+
   useEffect(() => {
     let alive = true;
     setLoading(true);
-    loadOverview().finally(() => {
+
+    loadDashboardSequence().finally(() => {
       if (alive) setLoading(false);
     });
-    return () => { alive = false; };
-  }, [loadOverview]);
 
-  useEffect(() => {
-    loadUsers();
-  }, [loadUsers]);
-
-  useEffect(() => { loadRoleUserCounts(); }, [loadRoleUserCounts]);
-
-  useEffect(() => {
-    loadInactive();
-  }, [loadInactive]);
+    return () => {
+      alive = false;
+    };
+  }, [loadDashboardSequence]);
 
   const refreshAll = async () => {
     setRefreshing(true);
-    setError("");
-    await Promise.all([loadOverview(), loadUsers(), loadInactive()]);
-    setRefreshing(false);
+    try {
+      await loadDashboardSequence();
+    } finally {
+      setRefreshing(false);
+    }
   };
-
   const classOptions = classes.map((item) => item.class_name).filter(Boolean);
   const selectedClass = classes.find((item) => item.class_name === className);
   const sectionOptions = selectedClass?.sections || [];
@@ -343,7 +373,7 @@ export default function PlatformActivityPage() {
         <div className={styles.errorBanner}>
           <AlertCircle size={18} />
           <span>{error}</span>
-          <button onClick={() => setError("")} aria-label="Dismiss error">�</button>
+          <button onClick={() => setError("")} aria-label="Dismiss error">ï¿½</button>
         </div>
       )}
 
@@ -503,8 +533,8 @@ export default function PlatformActivityPage() {
               <div><strong>{user.full_name || "Unknown user"}</strong><small>ID: {user.user_id}</small></div>
             </div>,
             <span className={styles.pill} key="role">{user.role_name || userRole}</span>,
-            user.class_name || "�",
-            user.section || "�",
+            user.class_name || "-",
+            user.section || "-",
             <span className={user.last_login ? "" : styles.muted} key="login">{formatDate(user.last_login)}</span>,
             formatNumber(user.logins_in_period),
           ])}
@@ -585,8 +615,8 @@ export default function PlatformActivityPage() {
               <div><strong>{user.full_name || "Unknown user"}</strong><small>ID: {user.user_id}</small></div>
             </div>,
             <span className={styles.pill} key="role">{user.role_name || inactiveRole}</span>,
-            user.class_name || "�",
-            user.section || "�",
+            user.class_name || "-",
+            user.section || "-",
             <span className={styles.muted} key="login">{formatDate(user.last_login)}</span>,
           ])}
           empty="No inactive users found for these filters."
@@ -666,8 +696,8 @@ export default function PlatformActivityPage() {
           rows={features
             .filter((f) => !moduleName || f.module_name === moduleName)
             .map((f) => [
-              f.module_name || "�",
-              <strong key="feature">{f.feature_used || "�"}</strong>,
+              f.module_name || "-",
+              <strong key="feature">{f.feature_used || "-"}</strong>,
               formatNumber(f.usage_count),
               formatNumber(f.unique_users),
               formatNumber(f.total_tokens),
@@ -686,16 +716,16 @@ export default function PlatformActivityPage() {
             <h2><Activity size={19} /> Recent Activity</h2>
             <p>Latest recorded login, page view and content view events.</p>
           </div>
-          <span className={styles.subtleBadge}>Last 7 days � {events.length} events</span>
+          <span className={styles.subtleBadge}>Last 7 days - {events.length} events</span>
         </div>
         <DataTable
           headers={["User Name", "Role", "Event", "Login method", "Page", "Date & time"]}
           rows={events.map((event) => [
             <strong key="id">{event.full_name || event.user_id || "Unknown user"}</strong>,
-            <span className={styles.pill} key="role">{event.role_name || "�"}</span>,
+            <span className={styles.pill} key="role">{event.role_name || "-"}</span>,
             <span className={styles.eventType} key="type">{String(event.activity_type || "event").replaceAll("_", " ")}</span>,
-            event.login_method || "�",
-            <span className={styles.path} key="path">{event.page_path || "�"}</span>,
+            event.login_method || "-",
+            <span className={styles.path} key="path">{event.page_path || "-"}</span>,
             formatDate(event.created_at),
           ])}
           empty="No recent events recorded."
@@ -706,7 +736,7 @@ export default function PlatformActivityPage() {
 
       <footer className={styles.footer}>
         <span><School size={15} /> SGS Headmaster Dashboard</span>
-        <span>Platform Activity � Live API data</span>
+        <span>Platform Activity ï¿½ Live API data</span>
       </footer>
         </main>
       </div>
@@ -745,12 +775,3 @@ function DataTable({ headers, rows, loading, empty }) {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-

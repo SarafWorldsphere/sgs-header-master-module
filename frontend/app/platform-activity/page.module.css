@@ -773,3 +773,287 @@
     margin-bottom: 18px;
   }
 }
+
+/* ===== Platform Activity: Full Dark Theme ===== */
+.page {
+  color: #e5edf9;
+}
+
+.tabs {
+  background: #101d36 !important;
+  border: 1px solid #2a4168 !important;
+  box-shadow: none !important;
+}
+
+.tab {
+  color: #c4d4ed !important;
+}
+
+.tab:hover {
+  background: #1b2c4b !important;
+  color: #ffffff !important;
+}
+
+.tab.active,
+.tab[aria-selected="true"] {
+  background: #2563eb !important;
+  color: #ffffff !important;
+}
+
+.panel {
+  background: linear-gradient(145deg, #101d36, #0d1930) !important;
+  border: 1px solid #2a4168 !important;
+  box-shadow: none !important;
+  color: #e5edf9 !important;
+}
+
+.panel h2,
+.panel strong,
+.panel label {
+  color: #e5edf9;
+}
+
+.panel p,
+.note,
+.footer {
+  color: #a9bddb;
+}
+
+.tableScroll {
+  background: #0b172c !important;
+  border-color: #263b5c !important;
+}
+
+.table {
+  background: transparent !important;
+}
+
+.table th {
+  background: #172742 !important;
+  color: #a9c2e8 !important;
+  border-bottom: 1px solid #2a4168 !important;
+}
+
+.table td {
+  background: transparent !important;
+  color: #dce7f8 !important;
+  border-top-color: #223654 !important;
+}
+
+.table tbody tr:hover {
+  background: #1a2b49 !important;
+}
+
+.userCell strong {
+  color: #f0f5ff !important;
+}
+
+.userCell small {
+  color: #9eb1ce !important;
+}
+
+.searchField,
+.selectWrap,
+.filterField select,
+.searchField input {
+  background: #111f38 !important;
+  color: #e5edf9 !important;
+  border-color: #304766 !important;
+}
+
+.searchField input::placeholder {
+  color: #91a6c5 !important;
+}
+
+.filterField select option {
+  background: #111f38;
+  color: #e5edf9;
+}
+
+.subtleBadge {
+  background: #1b2d4b !important;
+  color: #c4d8f7 !important;
+  border: 1px solid #2b456b;
+}
+
+.featureSummary div {
+  background: #13223c !important;
+  border-color: #2a4168 !important;
+}
+
+.featureSummary span {
+  color: #a9bddb !important;
+}
+
+.featureSummary strong {
+  color: #eff5ff !important;
+}
+
+.avatar {
+  background: #203b66 !important;
+  color: #cfe0ff !important;
+}
+
+.pill {
+  background: #1c3152 !important;
+  color: #c8dcff !important;
+  border: 1px solid #304e7c;
+}
+
+.eventType {
+  background: #123d37 !important;
+  color: #9ce8d3 !important;
+}
+
+.path {
+  color: #78b7ff !important;
+}
+
+.empty,
+.tableMessage {
+  color: #a9bddb !important;
+}
+
+
+/* ===== Dark theme for Active Users KPI and Role Cards ===== */
+.kpiCard {
+  background: #101d36 !important;
+  border: 1px solid #2a4168 !important;
+  box-shadow: none !important;
+  color: #e5edf9 !important;
+}
+
+.kpiCard h3,
+.kpiCard h4,
+.kpiCard strong,
+.kpiCard p,
+.kpiCard span {
+  color: #dce7f8;
+}
+
+.kpiCard .kpiValue,
+.kpiCard .kpiNumber {
+  color: #ffffff !important;
+}
+
+.kpiGrid,
+.roleGrid {
+  background: transparent !important;
+}
+
+.roleCard,
+.roleMetrics,
+.roleMetric,
+.roleGrid > div {
+  background: #13223c !important;
+  border: 1px solid #2a4168 !important;
+  color: #e5edf9 !important;
+  box-shadow: none !important;
+}
+
+.roleCard h3,
+.roleCard h4,
+.roleCard strong,
+.roleCard span,
+.roleMetrics strong,
+.roleMetrics span,
+.roleGrid > div h3,
+.roleGrid > div h4,
+.roleGrid > div strong,
+.roleGrid > div span {
+  color: #e5edf9 !important;
+}
+
+.roleCard p,
+.roleMetrics p,
+.roleGrid > div p {
+  color: #a9bddb !important;
+}
+
+.roleCard .icon,
+.roleGrid > div .icon {
+  background: #203b66 !important;
+  color: #cfe0ff !important;
+}
+
+
+/* Remove borders around KPI count groups */
+.roleMetrics,
+.roleMetric {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+
+/* ===== Platform Activity dark-theme color fixes ===== */
+
+/* KPI icon containers: remove bright white backgrounds */
+.kpiIcon {
+  background: #172746 !important;
+  color: #60a5fa !important;
+  border: 1px solid #2b4165 !important;
+}
+
+.kpiIcon svg {
+  color: #60a5fa !important;
+  stroke: currentColor !important;
+}
+
+/* Refresh button */
+.refreshButton {
+  background: #172746 !important;
+  color: #eaf2ff !important;
+  border: 1px solid #35517b !important;
+}
+
+.refreshButton:hover {
+  background: #22395d !important;
+  color: #ffffff !important;
+}
+
+/* Main section tabs: Recent Activity, Active Users, etc. */
+.tabs {
+  background: #111f39 !important;
+  border: 1px solid #2b4165 !important;
+}
+
+.tab {
+  background: transparent !important;
+  color: #c7d7f2 !important;
+  border-color: transparent !important;
+}
+
+.tab:hover {
+  background: #1b2d4c !important;
+  color: #ffffff !important;
+}
+
+.tabActive {
+  background: #29466f !important;
+  color: #ffffff !important;
+  border-color: #41689d !important;
+}
+
+/* Role tabs: Overview, Teachers, Students, Parents, Headmaster */
+.sectionTabs {
+  background: #111f39 !important;
+  border-color: #2b4165 !important;
+}
+
+.sectionTab {
+  color: #c7d7f2 !important;
+  background: transparent !important;
+}
+
+.sectionTab:hover {
+  color: #ffffff !important;
+  background: #1b2d4c !important;
+}
+
+.sectionTabActive {
+  color: #ffffff !important;
+  background: #1b2d4c !important;
+  border-color: #60a5fa !important;
+}
