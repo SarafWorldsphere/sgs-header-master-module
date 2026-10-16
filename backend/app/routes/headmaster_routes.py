@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+﻿from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 
@@ -77,7 +77,7 @@ def assignment(
 # ACADEMIC ANALYTICS
 # ==================================================
 
-# ✅ NEW: Route to get the total number of students
+# âœ… NEW: Route to get the total number of students
 @router.get("/academic-analytics/student-count")
 def get_student_count(
     class_name: str = Query(...),
@@ -96,7 +96,7 @@ def get_subjects(
     return get_academic_analytics_subjects(db, class_name)
 
 
-# ✅ EXISTING: Route to generate AI report
+# âœ… EXISTING: Route to generate AI report
 @router.post("/academic-analytics")
 def academic(
     payload: AcademicAnalyticsRequest,
@@ -137,7 +137,7 @@ def get_platform_activity(
             created_at >= NOW() - make_interval(days => :days)
             AND (
                 :include_test_data = TRUE
-                OR l.user_id NOT LIKE 'TEST_STAGE2_%'
+                OR user_id NOT LIKE 'TEST_STAGE2_%'
             )
         """
         params = {
@@ -444,6 +444,125 @@ def get_platform_activity_users(
             detail="Unable to fetch platform users"
         )
 
+
+
+
+# PLATFORM ACTIVITY - USER COUNTS
+
+@router.get("/platform-activity/user-counts")
+def get_platform_user_counts(
+    days: int = Query(7, ge=1, le=90),
+    db: Session = Depends(get_db),
+):
+    try:
+        queries = {
+            "student": """
+                SELECT
+                    COUNT(*) AS total,
+                    COUNT(*) FILTER (WHERE logins > 0) AS active
+                FROM (
+                    SELECT s.student_id,
+                        COUNT(l.log_id) FILTER (
+                            WHERE LOWER(l.activity_type) = 'login'
+                              AND l.created_at >= NOW() - make_interval(days => :days)
+                        ) AS logins
+                    FROM public.sgs_student_master s
+                    LEFT JOIN public.sgs_platform_activity_logs l
+                        ON l.user_id = s.student_id::text
+                       AND LOWER(l.role_name) = 'student'
+                    WHERE s.record_status = 'Active'
+                    GROUP BY s.student_id
+                ) x
+            """,
+            "parent": """
+                SELECT
+                    COUNT(*) AS total,
+                    COUNT(*) FILTER (WHERE logins > 0) AS active
+                FROM (
+                    SELECT p.parent_id,
+                        COUNT(l.log_id) FILTER (
+                            WHERE LOWER(l.activity_type) = 'login'
+                              AND l.created_at >= NOW() - make_interval(days => :days)
+                        ) AS logins
+                    FROM public.sgs_parent_master p
+                    LEFT JOIN public.sgs_platform_activity_logs l
+                        ON l.user_id = p.phone
+                       AND LOWER(l.role_name) = 'parent'
+                    WHERE p.record_status = 'Active'
+                    GROUP BY p.parent_id
+                ) x
+            """,
+            "faculty": """
+                SELECT
+                    COUNT(*) AS total,
+                    COUNT(*) FILTER (WHERE logins > 0) AS active
+                FROM (
+                    SELECT t.teacher_id,
+                        COUNT(l.log_id) FILTER (
+                            WHERE LOWER(l.activity_type) = 'login'
+                              AND l.created_at >= NOW() - make_interval(days => :days)
+                        ) AS logins
+                    FROM public.sgs_teacher_master t
+                    LEFT JOIN public.sgs_platform_activity_logs l
+                        ON l.user_id = t.teacher_id::text
+                       AND LOWER(l.role_name) IN ('faculty', 'teacher')
+                    WHERE t.is_active = TRUE
+                      AND COALESCE(t.record_status, 'Active') = 'Active'
+                    GROUP BY t.teacher_id
+                ) x
+            """,
+            "headmaster": """
+                SELECT
+                    COUNT(*) AS total,
+                    COUNT(*) FILTER (WHERE logins > 0) AS active
+                FROM (
+                    SELECT u.user_id,
+                        COUNT(l.log_id) FILTER (
+                            WHERE LOWER(l.activity_type) = 'login'
+                              AND l.created_at >= NOW() - make_interval(days => :days)
+                        ) AS logins
+                    FROM public.sgs_users_masters u
+                    JOIN public.sgs_role_response r ON r.role_id = u.role_id
+                    LEFT JOIN public.sgs_platform_activity_logs l
+                        ON l.user_id = u.user_id::text
+                       AND LOWER(l.role_name) = 'headmaster'
+                    WHERE LOWER(r.role_name) = 'headmaster'
+                      AND u.is_active = TRUE
+                      AND u.record_status = 'Active'
+                    GROUP BY u.user_id
+                ) x
+            """,
+        }
+
+        counts = []
+
+        for role, sql in queries.items():
+            result = db.execute(
+                text(sql), {"days": days}
+            ).mappings().one()
+
+            total = int(result["total"] or 0)
+            active = int(result["active"] or 0)
+
+            counts.append({
+                "role": role,
+                "total": total,
+                "active": active,
+                "inactive": total - active,
+            })
+
+        return {
+            "success": True,
+            "period_days": days,
+            "counts": counts,
+        }
+
+    except Exception as e:
+        print("[Platform Activity User Counts] Error:", e)
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to fetch platform user counts",
+        )
 
 # PLATFORM ACTIVITY - INACTIVE USERS
 
