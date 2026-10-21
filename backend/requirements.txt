@@ -7,3 +7,4 @@ psycopg2-binary
 python-dotenv
 google-genai
 pydantic-settings
+saraswati-tenant @ git+https://github.com/SarafWorldsphere/saraswati-tenant-kit.git@main#subdirectory=python

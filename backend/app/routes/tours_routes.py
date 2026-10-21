@@ -18,7 +18,7 @@ def get_tours(db: Session = Depends(get_db)):
             event_type,
             applicable_class,
             record_status
-        FROM sgs_events
+        FROM events
         WHERE record_status = 'Active'
           AND event_type = 'tour'
         ORDER BY event_id DESC;

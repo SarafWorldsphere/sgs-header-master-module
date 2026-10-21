@@ -16,28 +16,30 @@ def get_class_teachers(db: Session = Depends(get_db)):
             t.full_name AS class_teacher_name,
             t.email_id AS teacher_email,
             t.phone AS teacher_mobile,
-            t.class_id,
+            m.class_id,
             c.class_name,
-            t.section_1,
-            t.section_2,
-            t.subject_name,
+            c.section_name,
+            m.subject_name,
             t.role,
-            t.is_class_teacher,
-            t.is_active,
-            t.record_status
+            m.is_class_teacher,
+            t.is_active
 
-        FROM sgs_teacher_master t
+        FROM public.teacher_master t
 
-        LEFT JOIN sgs_class_master c
-            ON t.class_id = c.class_id
+        JOIN public.teacher_class_subject_map m
+            ON m.teacher_id = t.teacher_id
 
-        WHERE t.is_class_teacher = TRUE
+        LEFT JOIN public.class_master c
+            ON c.class_id = m.class_id
+           AND c.academic_year = m.academic_year
+
+        WHERE m.is_class_teacher = TRUE
+          AND m.is_active = TRUE
           AND t.is_active = TRUE
-          AND t.record_status = 'Active'
           AND t.full_name IS NOT NULL
           AND TRIM(t.full_name) <> ''
 
-        ORDER BY t.class_id, t.full_name;
+        ORDER BY m.class_id, c.section_name, t.full_name;
     """
 
     result = db.execute(text(query)).mappings().all()

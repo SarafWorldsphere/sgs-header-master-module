@@ -11,7 +11,7 @@ def get_notifications(db: Session = Depends(get_db)):
 
     query = """
         SELECT notice_id, notice_title, notice_text, notice_date, is_read
-        FROM sgs_notice_board
+        FROM notice_board
         WHERE record_status = 'Active'
         ORDER BY notice_id DESC;
     """
@@ -25,7 +25,7 @@ def get_notifications(db: Session = Depends(get_db)):
 def mark_read(db: Session = Depends(get_db)):
 
     db.execute(text("""
-        UPDATE sgs_notice_board
+        UPDATE notice_board
         SET is_read = TRUE
         WHERE is_read = FALSE;
     """))

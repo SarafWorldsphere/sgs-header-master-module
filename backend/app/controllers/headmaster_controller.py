@@ -26,7 +26,7 @@ def get_assignment_report(db: Session, data: dict, user_info: dict):
             COUNT(*) AS total_assigned,
             SUM(CASE WHEN marks_obtained IS NOT NULL THEN 1 ELSE 0 END) AS completed,
             SUM(CASE WHEN marks_obtained IS NULL OR is_absent = true THEN 1 ELSE 0 END) AS missing
-        FROM sgs_assessment_results
+        FROM assessment_results
     """)).mappings().first()
 
     prompt = f"""
@@ -81,7 +81,7 @@ def get_class_student_count(db: Session, class_name: str, section_name: str):
     """
     count = db.execute(text("""
         SELECT COUNT(*) 
-        FROM sgs_student_master 
+        FROM student_master 
         WHERE class_name = :class_name 
         AND section_name = :section_name
     """), {"class_name": class_name, "section_name": section_name}).scalar()
@@ -115,12 +115,12 @@ def get_academic_analytics(db: Session, payload: dict, user_info: dict):
                 s.roll_no AS roll_no,
                 a.subject AS subject,
                 ROUND(AVG(ar.percentage), 2) AS score
-            FROM sgs_assessment_results ar
-            JOIN sgs_assessments a
+            FROM assessment_results ar
+            JOIN assessments a
                 ON a.assessment_id = ar.assessment_id
-            JOIN sgs_student_master s
+            JOIN student_master s
                 ON s.student_id = ar.student_id
-            JOIN sgs_class_master c
+            JOIN class_master c
                 ON c.class_id = s.class_id
             WHERE s.roll_no = :roll_no
               AND c.class_name = :class_name
@@ -145,12 +145,12 @@ def get_academic_analytics(db: Session, payload: dict, user_info: dict):
             SELECT
                 a.subject AS subject,
                 ROUND(AVG(ar.percentage), 2) AS score
-            FROM sgs_assessment_results ar
-            JOIN sgs_assessments a
+            FROM assessment_results ar
+            JOIN assessments a
                 ON a.assessment_id = ar.assessment_id
-            JOIN sgs_student_master s
+            JOIN student_master s
                 ON s.student_id = ar.student_id
-            JOIN sgs_class_master c
+            JOIN class_master c
                 ON c.class_id = s.class_id
             WHERE c.class_name = :class_name
               AND s.section = :section_name
@@ -172,12 +172,12 @@ def get_academic_analytics(db: Session, payload: dict, user_info: dict):
                 s.roll_no AS roll_no,
                 a.title AS test,
                 ar.percentage AS score
-            FROM sgs_assessment_results ar
-            JOIN sgs_assessments a
+            FROM assessment_results ar
+            JOIN assessments a
                 ON a.assessment_id = ar.assessment_id
-            JOIN sgs_student_master s
+            JOIN student_master s
                 ON s.student_id = ar.student_id
-            JOIN sgs_class_master c
+            JOIN class_master c
                 ON c.class_id = s.class_id
             WHERE s.roll_no = :roll_no
               AND c.class_name = :class_name
@@ -200,12 +200,12 @@ def get_academic_analytics(db: Session, payload: dict, user_info: dict):
             SELECT
                 s.full_name AS student,
                 ar.percentage AS score
-            FROM sgs_assessment_results ar
-            JOIN sgs_assessments a
+            FROM assessment_results ar
+            JOIN assessments a
                 ON a.assessment_id = ar.assessment_id
-            JOIN sgs_student_master s
+            JOIN student_master s
                 ON s.student_id = ar.student_id
-            JOIN sgs_class_master c
+            JOIN class_master c
                 ON c.class_id = s.class_id
             WHERE c.class_name = :class_name
               AND s.section = :section_name
@@ -354,12 +354,12 @@ def get_academic_analytics_subjects(db: Session, class_name: str):
 
     result = db.execute(text("""
         SELECT DISTINCT a.subject
-        FROM sgs_assessment_results ar
-        JOIN sgs_assessments a
+        FROM assessment_results ar
+        JOIN assessments a
             ON a.assessment_id = ar.assessment_id
-        JOIN sgs_student_master s
+        JOIN student_master s
             ON s.student_id = ar.student_id
-        JOIN sgs_class_master c
+        JOIN class_master c
             ON c.class_id = s.class_id
         WHERE c.class_name = :class_name
           AND a.subject IS NOT NULL
@@ -381,8 +381,8 @@ def get_teacher_performance(db: Session, data: dict, user_info: dict):
     teacher_data = db.execute(text("""
         SELECT u.full_name AS name,
                COUNT(a.assessment_id) AS assessments_created
-        FROM sgs_users_masters u
-        LEFT JOIN sgs_assessments a ON u.user_id::text = a.teacher_id
+        FROM users_masters u
+        LEFT JOIN assessments a ON u.user_id::text = a.teacher_id
         GROUP BY u.full_name
         ORDER BY assessments_created DESC
     """)).mappings().all()

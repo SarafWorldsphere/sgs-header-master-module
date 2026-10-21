@@ -18,7 +18,7 @@ def get_functions(db: Session = Depends(get_db)):
             event_type,
             applicable_class,
             record_status
-        FROM sgs_events
+        FROM events
         WHERE record_status = 'Active'
           AND event_type IN ('event', 'function')
         ORDER BY event_id DESC;

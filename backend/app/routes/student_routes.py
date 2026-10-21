@@ -21,7 +21,7 @@ def get_student_classes(db: Session = Depends(get_db)):
             class_name,
             section_name,
             academic_year
-        FROM sgs_class_master
+        FROM class_master
         WHERE record_status = 'Active'
           AND class_name IS NOT NULL
           AND TRIM(class_name) <> ''
@@ -44,10 +44,10 @@ def get_available_exams(db: Session = Depends(get_db)):
             e.exam_name AS option_name,
             e.exam_type,
             e.academic_year,
-            e.start_date AS assessment_date,
+           NULL::date AS assessment_date,
             NULL::bigint AS assessment_id,
             NULL::text AS subject
-        FROM public.sgs_exam_master e
+        FROM public.exam_master e
         WHERE e.exam_id IS NOT NULL
           AND e.exam_name IS NOT NULL
           AND TRIM(e.exam_name) <> ''
@@ -63,7 +63,7 @@ def get_available_exams(db: Session = Depends(get_db)):
             MAX(a.assessment_date) AS assessment_date,
             NULL::bigint AS assessment_id,
             NULL::text AS subject
-        FROM public.sgs_assessments a
+        FROM public.assessments a
         WHERE a.exam_id IS NULL
           AND a.class_id IS NOT NULL
           AND a.record_status = 'Active'
@@ -100,8 +100,8 @@ def get_students(
             s.student_phone,
             s.student_email AS email_id,
             s.record_status
-        FROM sgs_student_master s
-        LEFT JOIN sgs_class_master c
+        FROM student_master s
+        LEFT JOIN class_master c
             ON s.class_id = c.class_id
         WHERE s.record_status = 'Active'
           AND s.full_name IS NOT NULL
@@ -154,14 +154,14 @@ def get_progress(db: Session = Depends(get_db)):
             sm.grade,
             sm.remarks,
             sm.record_status
-        FROM sgs_student_marks sm
-        LEFT JOIN sgs_student_master s
+        FROM student_marks sm
+        LEFT JOIN student_master s
             ON sm.student_id = s.student_id
-        LEFT JOIN sgs_class_master c
+        LEFT JOIN class_master c
             ON s.class_id = c.class_id
-        LEFT JOIN sgs_subject_master sub
+        LEFT JOIN subject_master sub
             ON sm.subject_id = sub.subject_id
-        LEFT JOIN sgs_exam_master e
+        LEFT JOIN exam_master e
             ON sm.exam_id = e.exam_id
         WHERE sm.record_status = 'Active'
         ORDER BY sm.marks_id;
@@ -192,7 +192,7 @@ def get_student_assessment_report(
     student = db.execute(
         text("""
             SELECT student_id, class_id
-            FROM public.sgs_student_master
+            FROM public.student_master
             WHERE student_id = :student_id
               AND record_status = 'Active'
         """),
@@ -239,12 +239,12 @@ def get_student_assessment_report(
                 ELSE 'EXAM'
             END AS report_category
 
-        FROM public.sgs_assessments AS a
+        FROM public.assessments AS a
 
-        INNER JOIN public.sgs_assessment_results AS r
+        INNER JOIN public.assessment_results AS r
             ON r.assessment_id = a.assessment_id
 
-        LEFT JOIN public.sgs_exam_master AS e
+        LEFT JOIN public.exam_master AS e
             ON e.exam_id = a.exam_id
 
         WHERE r.student_id = :student_id
@@ -413,8 +413,8 @@ def get_consolidated_subjects(
             sm.subject_id,
             sm.subject_name,
             sm.class_id
-        FROM public.sgs_subject_master sm
-        INNER JOIN public.sgs_assessments a
+        FROM public.subject_master sm
+        INNER JOIN public.assessments a
             ON LOWER(TRIM(a.subject)) = LOWER(TRIM(sm.subject_name))
         WHERE sm.record_status = 'Active'
           AND a.record_status = 'Active'
@@ -508,15 +508,15 @@ def get_consolidated_report(
                     )
                 END AS calculated_percentage
 
-            FROM public.sgs_assessments a
+            FROM public.assessments a
 
-            INNER JOIN public.sgs_assessment_results r
+            INNER JOIN public.assessment_results r
                 ON r.assessment_id = a.assessment_id
 
-            INNER JOIN public.sgs_student_master s
+            INNER JOIN public.student_master s
                 ON s.student_id = r.student_id
 
-            LEFT JOIN public.sgs_class_master c
+            LEFT JOIN public.class_master c
                 ON c.class_id = s.class_id
 
             WHERE a.record_status = 'Active'
@@ -598,8 +598,8 @@ def get_consolidated_report(
                     NULLIF(TRIM(c.section_name), ''),
                     'Unknown'
                 ) AS section_name
-            FROM public.sgs_student_master s
-            LEFT JOIN public.sgs_class_master c
+            FROM public.student_master s
+            LEFT JOIN public.class_master c
                 ON c.class_id = s.class_id
             WHERE s.record_status = 'Active'
               AND s.class_id = :class_id
@@ -974,8 +974,8 @@ def get_student_details(
             s.student_phone,
             s.student_email AS email_id,
             s.record_status
-        FROM sgs_student_master s
-        LEFT JOIN sgs_class_master c
+        FROM student_master s
+        LEFT JOIN class_master c
             ON s.class_id = c.class_id
         WHERE s.student_id = :student_id;
     """
@@ -996,8 +996,8 @@ def get_student_details(
             p.full_name,
             p.phone,
             p.email
-        FROM sgs_parent_student_map spm
-        LEFT JOIN sgs_parent_master p
+        FROM parent_student_map spm
+        LEFT JOIN parent_master p
             ON spm.parent_id = p.parent_id
         WHERE spm.student_id = :student_id
         ORDER BY spm.id;

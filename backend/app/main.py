@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from saraswati_tenant import SchoolMiddleware
 
 from .routes import (
     student_routes,
@@ -13,6 +14,8 @@ from .routes import (
 )
 
 app = FastAPI(title="School Management API")
+
+app.add_middleware(SchoolMiddleware)
 
 app.add_middleware(
     CORSMiddleware,

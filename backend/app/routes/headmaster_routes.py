@@ -31,8 +31,8 @@ def get_headmaster(db: Session = Depends(get_db)):
 
     query = """
         SELECT u.full_name, r.role_name
-        FROM sgs_users_masters u
-        JOIN sgs_role_response r ON r.role_id = u.role_id
+        FROM users_masters u
+        JOIN role_response r ON r.role_id = u.role_id
         WHERE LOWER(r.role_name) = 'headmaster'
           AND u.is_active = TRUE
           AND u.record_status = 'Active'
@@ -158,7 +158,7 @@ def get_platform_activity(
                 COUNT(*) FILTER (
                     WHERE activity_type = 'content_view'
                 ) AS total_content_views
-            FROM public.sgs_platform_activity_logs
+            FROM public.platform_activity_logs
             WHERE {filters}
         """), params).mappings().one()
 
@@ -171,7 +171,7 @@ def get_platform_activity(
                 ) AS login_count,
                 COUNT(DISTINCT user_id) AS unique_users,
                 COUNT(*) AS total_activities
-            FROM public.sgs_platform_activity_logs
+            FROM public.platform_activity_logs
             WHERE {filters}
             GROUP BY role_name
             ORDER BY role_name
@@ -182,7 +182,7 @@ def get_platform_activity(
             SELECT
                 TO_CHAR(created_at::date, 'YYYY-MM-DD') AS activity_date,
                 COUNT(*) AS login_count
-            FROM public.sgs_platform_activity_logs
+            FROM public.platform_activity_logs
             WHERE {filters}
               AND activity_type = 'login'
             GROUP BY created_at::date
@@ -194,7 +194,7 @@ def get_platform_activity(
             SELECT
                 activity_type,
                 COUNT(*) AS activity_count
-            FROM public.sgs_platform_activity_logs
+            FROM public.platform_activity_logs
             WHERE {filters}
             GROUP BY activity_type
             ORDER BY activity_type
@@ -234,7 +234,7 @@ def get_platform_activity_classes(
                 ) FILTER (
                     WHERE NULLIF(TRIM(section_name), '') IS NOT NULL
                 ) AS sections
-            FROM public.sgs_class_master
+            FROM public.class_master
             WHERE record_status = 'Active'
               AND NULLIF(TRIM(class_name), '') IS NOT NULL
               AND COALESCE(academic_year, '') NOT LIKE 'TEST_%'
@@ -295,8 +295,8 @@ def get_platform_activity_users(
                         WHERE LOWER(l.activity_type) = 'login'
                           AND l.created_at >= NOW() - make_interval(days => :days)
                     ) AS logins_in_period
-                FROM public.sgs_student_master s
-                LEFT JOIN public.sgs_platform_activity_logs l
+                FROM public.student_master s
+                LEFT JOIN public.platform_activity_logs l
                     ON l.user_id = s.student_id::text
                    AND LOWER(l.role_name) = 'student'
                 WHERE s.record_status = 'Active'
@@ -323,23 +323,23 @@ def get_platform_activity_users(
                     s.section,
                     (
                         SELECT MAX(l.created_at)
-                        FROM public.sgs_platform_activity_logs l
+                        FROM public.platform_activity_logs l
                         WHERE l.user_id = p.phone
                           AND LOWER(l.role_name) = 'parent'
                           AND LOWER(l.activity_type) = 'login'
                     ) AS last_login,
                     (
                         SELECT COUNT(*)
-                        FROM public.sgs_platform_activity_logs l
+                        FROM public.platform_activity_logs l
                         WHERE l.user_id = p.phone
                           AND LOWER(l.role_name) = 'parent'
                           AND LOWER(l.activity_type) = 'login'
                           AND l.created_at >= NOW() - make_interval(days => :days)
                     ) AS logins_in_period
-                FROM public.sgs_parent_master p
-                JOIN public.sgs_parent_student_map psm
+                FROM public.parent_master p
+                JOIN public.parent_student_map psm
                     ON psm.parent_id = p.parent_id
-                JOIN public.sgs_student_master s
+                JOIN public.student_master s
                     ON s.student_id = psm.student_id
                 WHERE p.record_status = 'Active'
                   AND s.record_status = 'Active'
@@ -367,20 +367,20 @@ def get_platform_activity_users(
                     NULL::text AS section,
                     (
                         SELECT MAX(l.created_at)
-                        FROM public.sgs_platform_activity_logs l
+                        FROM public.platform_activity_logs l
                         WHERE l.user_id = t.teacher_id
                           AND LOWER(l.role_name) IN ('faculty', 'teacher')
                           AND LOWER(l.activity_type) = 'login'
                     ) AS last_login,
                     (
                         SELECT COUNT(*)
-                        FROM public.sgs_platform_activity_logs l
+                        FROM public.platform_activity_logs l
                         WHERE l.user_id = t.teacher_id
                           AND LOWER(l.role_name) IN ('faculty', 'teacher')
                           AND LOWER(l.activity_type) = 'login'
                           AND l.created_at >= NOW() - make_interval(days => :days)
                     ) AS logins_in_period
-                FROM public.sgs_teacher_master t
+                FROM public.teacher_master t
                 WHERE t.is_active = TRUE
                   AND COALESCE(t.record_status, 'Active') = 'Active'
                 ORDER BY t.full_name
@@ -395,21 +395,21 @@ def get_platform_activity_users(
                     NULL::text AS section,
                     (
                         SELECT MAX(l.created_at)
-                        FROM public.sgs_platform_activity_logs l
+                        FROM public.platform_activity_logs l
                         WHERE l.user_id = u.user_id::text
                           AND LOWER(l.role_name) = 'headmaster'
                           AND LOWER(l.activity_type) = 'login'
                     ) AS last_login,
                     (
                         SELECT COUNT(*)
-                        FROM public.sgs_platform_activity_logs l
+                        FROM public.platform_activity_logs l
                         WHERE l.user_id = u.user_id::text
                           AND LOWER(l.role_name) = 'headmaster'
                           AND LOWER(l.activity_type) = 'login'
                           AND l.created_at >= NOW() - make_interval(days => :days)
                     ) AS logins_in_period
-                FROM public.sgs_users_masters u
-                JOIN public.sgs_role_response r ON r.role_id = u.role_id
+                FROM public.users_masters u
+                JOIN public.role_response r ON r.role_id = u.role_id
                 WHERE LOWER(r.role_name) = 'headmaster'
                   AND u.is_active = TRUE
                   AND u.record_status = 'Active'
@@ -466,8 +466,8 @@ def get_platform_user_counts(
                             WHERE LOWER(l.activity_type) = 'login'
                               AND l.created_at >= NOW() - make_interval(days => :days)
                         ) AS logins
-                    FROM public.sgs_student_master s
-                    LEFT JOIN public.sgs_platform_activity_logs l
+                    FROM public.student_master s
+                    LEFT JOIN public.platform_activity_logs l
                         ON l.user_id = s.student_id::text
                        AND LOWER(l.role_name) = 'student'
                     WHERE s.record_status = 'Active'
@@ -484,8 +484,8 @@ def get_platform_user_counts(
                             WHERE LOWER(l.activity_type) = 'login'
                               AND l.created_at >= NOW() - make_interval(days => :days)
                         ) AS logins
-                    FROM public.sgs_parent_master p
-                    LEFT JOIN public.sgs_platform_activity_logs l
+                    FROM public.parent_master p
+                    LEFT JOIN public.platform_activity_logs l
                         ON l.user_id = p.phone
                        AND LOWER(l.role_name) = 'parent'
                     WHERE p.record_status = 'Active'
@@ -502,8 +502,8 @@ def get_platform_user_counts(
                             WHERE LOWER(l.activity_type) = 'login'
                               AND l.created_at >= NOW() - make_interval(days => :days)
                         ) AS logins
-                    FROM public.sgs_teacher_master t
-                    LEFT JOIN public.sgs_platform_activity_logs l
+                    FROM public.teacher_master t
+                    LEFT JOIN public.platform_activity_logs l
                         ON l.user_id = t.teacher_id::text
                        AND LOWER(l.role_name) IN ('faculty', 'teacher')
                     WHERE t.is_active = TRUE
@@ -521,9 +521,9 @@ def get_platform_user_counts(
                             WHERE LOWER(l.activity_type) = 'login'
                               AND l.created_at >= NOW() - make_interval(days => :days)
                         ) AS logins
-                    FROM public.sgs_users_masters u
-                    JOIN public.sgs_role_response r ON r.role_id = u.role_id
-                    LEFT JOIN public.sgs_platform_activity_logs l
+                    FROM public.users_masters u
+                    JOIN public.role_response r ON r.role_id = u.role_id
+                    LEFT JOIN public.platform_activity_logs l
                         ON l.user_id = u.user_id::text
                        AND LOWER(l.role_name) = 'headmaster'
                     WHERE LOWER(r.role_name) = 'headmaster'
@@ -593,8 +593,8 @@ def get_platform_inactive_users(
                     MAX(l.created_at) FILTER (
                         WHERE LOWER(l.activity_type) = 'login'
                     ) AS last_login
-                FROM public.sgs_student_master s
-                LEFT JOIN public.sgs_platform_activity_logs l
+                FROM public.student_master s
+                LEFT JOIN public.platform_activity_logs l
                     ON l.user_id = s.student_id::text
                    AND LOWER(l.role_name) = 'student'
                    AND LOWER(l.activity_type) = 'login'
@@ -626,12 +626,12 @@ def get_platform_inactive_users(
                     MAX(l.created_at) FILTER (
                         WHERE LOWER(l.activity_type) = 'login'
                     ) AS last_login
-                FROM public.sgs_parent_master p
-                JOIN public.sgs_parent_student_map psm
+                FROM public.parent_master p
+                JOIN public.parent_student_map psm
                     ON psm.parent_id = p.parent_id
-                JOIN public.sgs_student_master s
+                JOIN public.student_master s
                     ON s.student_id = psm.student_id
-                LEFT JOIN public.sgs_platform_activity_logs l
+                LEFT JOIN public.platform_activity_logs l
                     ON l.user_id = p.phone
                    AND LOWER(l.role_name) = 'parent'
                    AND LOWER(l.activity_type) = 'login'
@@ -664,8 +664,8 @@ def get_platform_inactive_users(
                     MAX(l.created_at) FILTER (
                         WHERE LOWER(l.activity_type) = 'login'
                     ) AS last_login
-                FROM public.sgs_teacher_master t
-                LEFT JOIN public.sgs_platform_activity_logs l
+                FROM public.teacher_master t
+                LEFT JOIN public.platform_activity_logs l
                     ON l.user_id = t.teacher_id
                    AND LOWER(l.role_name) IN ('faculty', 'teacher')
                    AND LOWER(l.activity_type) = 'login'
@@ -687,10 +687,10 @@ def get_platform_inactive_users(
                     MAX(l.created_at) FILTER (
                         WHERE LOWER(l.activity_type) = 'login'
                     ) AS last_login
-                FROM public.sgs_users_masters u
-                JOIN public.sgs_role_response r
+                FROM public.users_masters u
+                JOIN public.role_response r
                     ON r.role_id = u.role_id
-                LEFT JOIN public.sgs_platform_activity_logs l
+                LEFT JOIN public.platform_activity_logs l
                     ON l.user_id = u.user_id::text
                    AND LOWER(l.role_name) = 'headmaster'
                    AND LOWER(l.activity_type) = 'login'
@@ -747,7 +747,7 @@ def get_platform_feature_usage(
                 COUNT(DISTINCT user_email) AS unique_users,
                 COALESCE(SUM(total_tokens), 0) AS total_tokens,
                 MAX(created_at_ist) AS last_used_at
-            FROM public.sgs_ai_usage_logs
+            FROM public.ai_usage_logs
             WHERE created_at_ist >= NOW() - make_interval(days => :days)
               AND (
                     CAST(:module_name AS TEXT) IS NULL
@@ -817,17 +817,17 @@ def get_platform_recent_events(
                 l.login_method,
                 l.page_path,
                 l.created_at
-            FROM public.sgs_platform_activity_logs l
-            LEFT JOIN public.sgs_student_master st
+            FROM public.platform_activity_logs l
+            LEFT JOIN public.student_master st
                 ON LOWER(l.role_name) = 'student'
                AND st.student_id::text = l.user_id
-            LEFT JOIN public.sgs_parent_master pa
+            LEFT JOIN public.parent_master pa
                 ON LOWER(l.role_name) = 'parent'
                AND pa.phone = l.user_id
-            LEFT JOIN public.sgs_teacher_master te
+            LEFT JOIN public.teacher_master te
                 ON LOWER(l.role_name) IN ('faculty', 'teacher')
                AND te.teacher_id::text = l.user_id
-            LEFT JOIN public.sgs_users_masters hm
+            LEFT JOIN public.users_masters hm
                 ON LOWER(l.role_name) = 'headmaster'
                AND hm.user_id::text = l.user_id
             WHERE l.created_at >= NOW() - make_interval(days => :days)

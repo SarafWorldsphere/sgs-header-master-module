@@ -1,14 +1,7 @@
-import os
+
 from sqlalchemy import text
 from sqlalchemy.orm import Session
-from dotenv import load_dotenv
-
-load_dotenv()
-
-CLIENT_NAME = os.getenv("CLIENT_NAME")
-
-if not CLIENT_NAME:
-    raise Exception("CLIENT_NAME is missing in .env")
+from saraswati_tenant.context import current_school
 
 
 def log_ai_usage(
@@ -28,9 +21,11 @@ def log_ai_usage(
     )
 
     try:
+        school = current_school()
+
         db.execute(
             text("""
-                INSERT INTO sgs_ai_usage_logs (
+                INSERT INTO ai_usage_logs (
                     client_name,
                     user_email,
                     module_name,
@@ -50,7 +45,7 @@ def log_ai_usage(
                 )
             """),
             {
-               "client_name": CLIENT_NAME,
+                "client_name": school.slug,
                 "user_email": user_info.get("email"),
                 "module_name": module_name,
                 "feature_used": feature_name,
