@@ -64,7 +64,10 @@ export default function Sidebar({
   const handleClick = (item) => {
     if (item.id === "logout") {
       setShowLogout(true);
-      if (window.innerWidth <= 900) onClose?.();
+
+      if (window.innerWidth <= 900) {
+        onClose?.();
+      }
       return;
     }
 
