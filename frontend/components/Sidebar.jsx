@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -28,8 +29,18 @@ export default function Sidebar({
     { id: "students", label: "Students", icon: Users, route: "/students" },
     { id: "teachers", label: "Teachers", icon: GraduationCap, route: "/teachers" },
     { id: "reports", label: "Reports", icon: FileText, route: "/reports" },
-    { id: "notifications", label: "Notifications", icon: Bell, route: "/notifications" },
-    { id: "schoolEvents", label: "School Events", icon: CalendarDays, route: "/school-events" },
+    {
+      id: "notifications",
+      label: "Notifications",
+      icon: Bell,
+      route: "/notifications",
+    },
+    {
+      id: "schoolEvents",
+      label: "School Events",
+      icon: CalendarDays,
+      route: "/school-events",
+    },
     {
       id: "platformActivity",
       label: "Platform Activity",
@@ -53,11 +64,14 @@ export default function Sidebar({
   const handleClick = (item) => {
     if (item.id === "logout") {
       setShowLogout(true);
+      if (window.innerWidth <= 900) onClose?.();
       return;
     }
 
     if (item.route) {
       router.push(item.route);
+    } else {
+      setActiveTab?.(item.id);
     }
 
     if (window.innerWidth <= 900) {
@@ -91,6 +105,7 @@ export default function Sidebar({
               return (
                 <button
                   key={item.id}
+                  type="button"
                   className={`menu-btn ${
                     activeTab === item.id ? "active" : ""
                   } ${item.danger ? "logout-style" : ""}`}
