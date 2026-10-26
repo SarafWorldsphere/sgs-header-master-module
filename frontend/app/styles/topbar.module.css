@@ -1,0 +1,208 @@
+.topbar {
+  position: relative;
+  z-index: 1000;
+
+  width: 100%;
+  min-width: 0;
+  min-height: 82px;
+  padding: 14px 30px;
+  margin: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+
+  background: #1e1b4b;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0;
+  box-shadow: none;
+  flex-shrink: 0;
+}
+.heading {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.headingContent {
+  min-width: 0;
+}
+
+.headingContent h1 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 28px;
+  font-weight: 750;
+  line-height: 1.25;
+}
+
+.headingContent p {
+  margin-top: 6px;
+  color: #cbd5e1;
+  font-size: 14px;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.aiButton {
+  min-height: 44px;
+  padding: 0 18px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: #2563eb;
+  color: #ffffff;
+
+  font-size: 14px;
+  font-weight: 650;
+  white-space: nowrap;
+  cursor: pointer;
+
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.aiButton:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.notificationButton,
+.profileIcon,
+.mobileMenu {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid rgba(203, 213, 225, 0.16);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+}
+
+.notificationButton {
+  position: relative;
+  padding: 0;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.notificationButton:hover,
+.profileIcon:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.notificationBadge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 5px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 2px solid #1e1b4b;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #ffffff;
+
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.profileIcon {
+  border-radius: 50%;
+  cursor: default;
+}
+
+.mobileMenu {
+  display: none;
+  flex-shrink: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+@media (max-width: 900px) {
+  .topbar {
+    min-height: 80px;
+    padding: 16px;
+    gap: 14px;
+  }
+
+  .mobileMenu {
+    display: inline-flex;
+  }
+
+  .headingContent h1 {
+    font-size: 22px;
+  }
+
+  .actions {
+    gap: 8px;
+  }
+}
+
+@media (max-width: 600px) {
+  .topbar {
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .heading {
+    flex: 1;
+  }
+
+  .headingContent h1 {
+    font-size: 19px;
+  }
+
+  .headingContent p {
+    margin-top: 4px;
+    font-size: 12px;
+  }
+
+  .actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .aiButton {
+    margin-right: auto;
+  }
+}
+
+@media (max-width: 360px) {
+  .topbar {
+    padding: 10px;
+  }
+
+  .headingContent h1 {
+    font-size: 17px;
+  }
+
+  .aiButton {
+    padding: 0 12px;
+  }
+}

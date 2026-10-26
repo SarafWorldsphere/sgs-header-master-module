@@ -2,16 +2,28 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-
+import { Search, Mic } from "lucide-react";
+import useVoice from "../hooks/useVoice";
+import styles from "../app/styles/students.module.css";
 export default function StudentsSection({
   students = [],
   searchText = "",
+  setSearchText = () => {},
   loaded = false,
 }) {
   const [selectedClass, setSelectedClass] = useState("");
   const [selectedSection, setSelectedSection] = useState("");
 const [classMaster, setClassMaster] = useState([]);
 const [classesLoading, setClassesLoading] = useState(false);
+
+
+const { listening, startVoice } = useVoice();
+
+const handleVoiceInput = () => {
+  startVoice((text) => {
+    setSearchText(text);
+  });
+};
 
 const [filteredApiStudents, setFilteredApiStudents] = useState(students);
 const [studentsLoading, setStudentsLoading] = useState(false);
@@ -131,10 +143,11 @@ const filteredStudents = useMemo(() => {
   return filteredApiStudents.filter((student) => {
     const matchesSearch =
       !search ||
-      student.full_name?.toLowerCase().includes(search) ||
-      student.admission_no?.toLowerCase().includes(search) ||
-      student.class_name?.toLowerCase().includes(search) ||
-      student.section_name?.toLowerCase().includes(search);
+      String(student.full_name ?? "").toLowerCase().includes(search) ||
+      String(student.admission_no ?? "").toLowerCase().includes(search) ||
+      String(student.roll_no ?? "").toLowerCase().includes(search) ||
+      String(student.class_name ?? "").toLowerCase().includes(search) ||
+      String(student.section_name ?? "").toLowerCase().includes(search);
 
     return matchesSearch;
   });
@@ -283,6 +296,34 @@ const filteredStudents = useMemo(() => {
               ))}
             </select>
           </div>
+        <div className={styles.studentSearch}>
+  <label htmlFor="student-search">Search Students</label>
+
+  <div className={styles.studentSearchBox}>
+    <Search size={18} aria-hidden="true" />
+
+    <input
+      id="student-search"
+      type="search"
+      value={searchText}
+      onChange={(event) => setSearchText(event.target.value)}
+      placeholder="Name, admission no. or roll no."
+      aria-label="Search by name, admission number or roll number"
+    />
+
+    <button
+      type="button"
+      className={
+        listening ? styles.micButtonActive : styles.micButton
+      }
+      onClick={handleVoiceInput}
+      aria-label="Search using voice"
+      title="Voice search"
+    >
+      <Mic size={18} />
+    </button>
+  </div>
+</div>
 
           {/* RESET BUTTON */}
           {(selectedClass || selectedSection) && (
