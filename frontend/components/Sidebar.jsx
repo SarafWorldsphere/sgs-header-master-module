@@ -1,20 +1,20 @@
-﻿import { useState } from "react";
+
+"use client";
+
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Home,
   Users,
   GraduationCap,
-  FileText ,
-  TrendingUp,
+  FileText,
   Bell,
   CalendarDays,
-  MapPinned,
-  UserCheck,
   LogOut,
   Activity,
 } from "lucide-react";
-import Image from "next/image";
 import LogoutModal from "@/components/LogoutModal";
+
 export default function Sidebar({
   activeTab,
   setActiveTab,
@@ -22,33 +22,39 @@ export default function Sidebar({
   onClose,
 }) {
   const router = useRouter();
-
-  // âœ… ADD STATE FOR MODAL
   const [showLogout, setShowLogout] = useState(false);
 
   const menuItems = [
-    { id: "dashboard", label: "Dashboard", icon: Home },
-    { id: "students", label: "Students", icon: Users },
-    { id: "teachers", label: "Teachers", icon: GraduationCap },
-    { id: "reports", label: "Reports", icon: FileText },
-    { id: "progress", label: "Progress", icon: TrendingUp },
-    { id: "notifications", label: "Notifications", icon: Bell },
-    { id: "functions", label: "Functions", icon: CalendarDays },
-    { id: "tours", label: "Tours", icon: MapPinned },
-    { id: "classTeachers", label: "Class Teachers", icon: UserCheck },
-    { id: "platformActivity", label: "Platform Activity", icon: Activity },
-
-    // logout item stays same
+    { id: "dashboard", label: "Dashboard", icon: Home, route: "/" },
+    { id: "students", label: "Students", icon: Users, route: "/students" },
+    { id: "teachers", label: "Teachers", icon: GraduationCap, route: "/teachers" },
+    { id: "reports", label: "Reports", icon: FileText, route: "/reports" },
+    {
+      id: "notifications",
+      label: "Notifications",
+      icon: Bell,
+      route: "/notifications",
+    },
+    {
+      id: "schoolEvents",
+      label: "School Events",
+      icon: CalendarDays,
+      route: "/school-events",
+    },
+    {
+      id: "platformActivity",
+      label: "Platform Activity",
+      icon: Activity,
+      route: "/platform-activity",
+    },
     { id: "logout", label: "Logout", icon: LogOut, danger: true },
   ];
 
-  // âœ… LOGOUT LOGIC
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("role");
     sessionStorage.clear();
 
-    // clear cookie (if used)
     document.cookie =
       "sgs_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC";
 
@@ -57,43 +63,43 @@ export default function Sidebar({
 
   const handleClick = (item) => {
     if (item.id === "logout") {
-      setShowLogout(true); // âœ… open modal instead of confirm
+      setShowLogout(true);
+      if (window.innerWidth <= 900) {
+        onClose?.();
+      }
       return;
     }
 
-   if (item.id === "platformActivity") {
-     router.push("/platform-activity");
-     if (window.innerWidth <= 900) onClose();
-     return;
-   }
-   setActiveTab(item.id);
+    if (item.route) {
+      router.push(item.route);
+    } else {
+      setActiveTab?.(item.id);
+    }
 
-if (window.innerWidth <= 900) {
-  onClose();
-}
+    if (window.innerWidth <= 900) {
+      onClose?.();
+    }
   };
 
   return (
     <>
       <div className={`sidebar ${isOpen ? "open" : ""}`}>
         <div>
-          {/* BRAND */}
-        <div className="brand-box">
-  <div className="logo-circle">
-    <img
-      src="/headmaster/school-logo.jpeg"
-      alt="SGS Logo"
-      width={80}
-      height={80}
-      className="school-logo"
-    />
-  </div>
+          <div className="brand-box">
+            <div className="logo-circle">
+              <img
+                src="/headmaster/school-logo.jpeg"
+                alt="SGS Logo"
+                width={80}
+                height={80}
+                className="school-logo"
+              />
+            </div>
 
-  <h2>SGS SCHOOL</h2>
-  <p>Headmaster Dashboard</p>
-</div>
+            <h2>SGS SCHOOL</h2>
+            <p>Headmaster Dashboard</p>
+          </div>
 
-          {/* MENU */}
           <div className="menu-list">
             {menuItems.map((item) => {
               const Icon = item.icon;
@@ -101,6 +107,7 @@ if (window.innerWidth <= 900) {
               return (
                 <button
                   key={item.id}
+                  type="button"
                   className={`menu-btn ${
                     activeTab === item.id ? "active" : ""
                   } ${item.danger ? "logout-style" : ""}`}
@@ -114,14 +121,11 @@ if (window.innerWidth <= 900) {
           </div>
         </div>
       </div>
-      {isOpen && (
-  <div
-    className="sidebar-overlay"
-    onClick={onClose}
-  />
-)}
 
-      {/* âœ… LOGOUT MODAL (ADD HERE - OUTSIDE SIDEBAR DIV) */}
+      {isOpen && (
+        <div className="sidebar-overlay" onClick={onClose} />
+      )}
+
       <LogoutModal
         open={showLogout}
         onCancel={() => setShowLogout(false)}
@@ -130,5 +134,3 @@ if (window.innerWidth <= 900) {
     </>
   );
 }
-
-

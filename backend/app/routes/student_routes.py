@@ -33,49 +33,48 @@ def get_student_classes(db: Session = Depends(get_db)):
 
 
 
-
 # ===================== UNIFIED EXAM & WEEKLY TEST OPTIONS =====================
 @router.get("/exams")
 def get_available_exams(db: Session = Depends(get_db)):
     query = text("""
-        SELECT
-            'EXAM'::text AS option_type,
-            e.exam_id::bigint AS option_id,
-            e.exam_name AS option_name,
-            e.exam_type,
-            e.academic_year,
-            e.start_date AS assessment_date,
-            NULL::bigint AS assessment_id,
-            NULL::text AS subject
-        FROM public.sgs_exam_master e
-        WHERE e.exam_id IS NOT NULL
-          AND e.exam_name IS NOT NULL
-          AND TRIM(e.exam_name) <> ''
+        SELECT *
+        FROM (
+            SELECT
+                'EXAM'::text AS option_type,
+                e.exam_id::bigint AS option_id,
+                e.exam_name AS option_name,
+                e.exam_type,
+                e.academic_year,
+                e.start_date AS assessment_date,
+                NULL::bigint AS assessment_id,
+                NULL::text AS subject
+            FROM public.sgs_exam_master e
+            WHERE e.exam_id IS NOT NULL
+              AND e.exam_name IS NOT NULL
+              AND TRIM(e.exam_name) <> ''
 
-        UNION ALL
+            UNION ALL
 
-        SELECT
-            'ASSESSMENT'::text AS option_type,
-            0::bigint AS option_id,
-            'Weekly Test'::text AS option_name,
-            'CT'::text AS exam_type,
-            NULL::text AS academic_year,
-            MAX(a.assessment_date) AS assessment_date,
-            NULL::bigint AS assessment_id,
-            NULL::text AS subject
-        FROM public.sgs_assessments a
-        WHERE a.exam_id IS NULL
-          AND a.class_id IS NOT NULL
-          AND a.record_status = 'Active'
-          AND a.assessment_id IS NOT NULL
-        HAVING COUNT(*) > 0
-
-        ORDER BY assessment_date DESC NULLS LAST, option_name;
+            SELECT
+                'ASSESSMENT'::text AS option_type,
+                a.assessment_id::bigint AS option_id,
+                a.title::text AS option_name,
+                'CT'::text AS exam_type,
+                NULL::text AS academic_year,
+                a.assessment_date,
+                a.assessment_id::bigint AS assessment_id,
+                a.subject::text AS subject
+            FROM public.sgs_assessments a
+            WHERE a.exam_id IS NULL
+              AND a.class_id IS NOT NULL
+              AND a.record_status = 'Active'
+        ) AS available_tests
+        ORDER BY assessment_date DESC NULLS LAST,
+                 option_name;
     """)
 
     rows = db.execute(query).mappings().all()
     return [dict(row) for row in rows]
-
 
 
 # ===================== STUDENTS WITH OPTIONAL FILTERS =====================
@@ -392,6 +391,7 @@ def get_student_assessment_report(
             "subject": subject,
             "exam_id": exam_id,
             "assessment_id": assessment_id,
+            
         },
         "assessment_count": len(assessments),
         "attended_count": attended_count,
@@ -452,6 +452,7 @@ def get_consolidated_report(
         pattern="^(ALL|CT|PT)$"
     ),
     assessment_id: int | None = Query(default=None, gt=0),
+    exam_id: int | None = Query(default=None, gt=0),
     pass_percentage: float = Query(default=35, ge=0, le=100),
         output_format: str = Query(
         default="SUMMARY",
@@ -531,7 +532,7 @@ def get_consolidated_report(
                   :year IS NULL
                   OR EXTRACT(YEAR FROM a.assessment_date) = :year
               )
-              AND (:class_id IS NULL OR s.class_id = :class_id)
+              AND (:class_id IS NULL OR a.class_id = :class_id)
               AND (
                   :section IS NULL
                   OR TRIM(
@@ -547,34 +548,39 @@ def get_consolidated_report(
                   :subject IS NULL
                   OR TRIM(a.subject) = TRIM(:subject)
               )
-              AND (
-                  :assessment_id IS NULL
-                  OR a.assessment_id = :assessment_id
-              )
-              AND (
-                  :assessment_type = 'ALL'
-                  OR (
-                      :assessment_type = 'CT'
-                      AND a.exam_id IS NULL
-                      AND a.class_id IS NOT NULL
-                  )
-                  OR (
-                      :assessment_type = 'PT'
-                      AND a.exam_id IS NOT NULL
-                  )
-              )
+            AND (
+    :assessment_id IS NULL
+    OR a.assessment_id = :assessment_id
+)
+AND (
+    :exam_id IS NULL
+    OR a.exam_id = :exam_id
+)
+AND (
+    :assessment_type = 'ALL'
+    OR (
+        :assessment_type = 'CT'
+        AND a.exam_id IS NULL
+        AND a.class_id IS NOT NULL
+    )
+    OR (
+        :assessment_type = 'PT'
+        AND a.exam_id IS NOT NULL
+    )
+)
         )
     """
 
     params = {
-        "month": month,
-        "year": year,
-        "class_id": class_id,
-        "section": section,
-        "subject": subject,
-        "assessment_id": assessment_id,
-        "assessment_type": assessment_type,
-    }
+    "month": month,
+    "year": year,
+    "class_id": class_id,
+    "section": section,
+    "subject": subject,
+    "assessment_id": assessment_id,
+    "exam_id": exam_id,
+    "assessment_type": assessment_type,
+}
     # Student-wise consolidated matrix report.
     if output_format == "MATRIX":
         if class_id is None:
@@ -641,6 +647,25 @@ def get_consolidated_report(
             params,
         ).mappings().all()
 
+        if not matrix_rows:
+         return {
+        "view": view,
+        "report_type": "MATRIX",
+        "filters": {
+            "month": month,
+            "year": year,
+            "class_id": class_id,
+            "section": section,
+            "assessment_type": assessment_type,
+            "assessment_id": assessment_id,
+             "exam_id": exam_id,
+        },
+        "subjects": [],
+        "count": 0,
+        "results": [],
+        "message": "No tests conducted for this month.",
+    }
+
         # One maximum-mark entry per assessment.
         assessment_max = {}
         subject_assessments = {}
@@ -683,13 +708,14 @@ def get_consolidated_report(
                 "student_name": student["student_name"],
                 "roll_number": student["roll_number"],
                 "section": student["section_name"],
-                "subjects": {
-                    subject_name: {
-                        "obtained": 0.0,
-                        "max_marks": subject_max_marks[subject_name],
-                    }
-                    for subject_name in subjects
-                },
+               "subjects": {
+    subject_name: {
+        "obtained": None,
+        "max_marks": subject_max_marks[subject_name],
+        "has_marks": False,
+    }
+    for subject_name in subjects
+},
             }
 
         # Sum obtained marks across the selected month's assessments.
@@ -700,16 +726,23 @@ def get_consolidated_report(
             if student_id_value not in student_results:
                 continue
 
-            # Absent/null marks do not add to obtained marks.
             if (
                 row["is_absent"] is True
                 or row["marks_obtained"] is None
             ):
                 continue
 
-            student_results[student_id_value]["subjects"][
-                subject_name
-            ]["obtained"] += float(row["marks_obtained"])
+            subject_result = student_results[student_id_value][
+                "subjects"
+            ][subject_name]
+
+            if subject_result["obtained"] is None:
+                subject_result["obtained"] = 0.0
+
+            subject_result["obtained"] += float(
+                row["marks_obtained"]
+            )
+            subject_result["has_marks"] = True
 
         results = []
 
@@ -717,13 +750,25 @@ def get_consolidated_report(
             total_obtained = 0.0
             total_max_marks = 0.0
             subject_values = {}
+            has_any_marks = False
 
             for subject_name in subjects:
-                obtained = round(
-                    student_result["subjects"][subject_name]["obtained"],
-                    2,
-                )
+                subject_result = student_result["subjects"][
+                    subject_name
+                ]
+                obtained_value = subject_result["obtained"]
                 maximum = subject_max_marks[subject_name]
+
+                if obtained_value is None:
+                    subject_values[subject_name] = {
+                        "obtained": None,
+                        "max_marks": maximum,
+                        "display": "—",
+                    }
+                    continue
+
+                obtained = round(obtained_value, 2)
+                has_any_marks = True
 
                 subject_values[subject_name] = {
                     "obtained": obtained,
@@ -738,8 +783,11 @@ def get_consolidated_report(
             total_max_marks = round(total_max_marks, 2)
 
             percentage = (
-                round(total_obtained / total_max_marks * 100, 2)
-                if total_max_marks > 0
+                round(
+                    total_obtained / total_max_marks * 100,
+                    2,
+                )
+                if total_max_marks > 0 and has_any_marks
                 else None
             )
 
@@ -749,13 +797,20 @@ def get_consolidated_report(
                 "roll_number": student_result["roll_number"],
                 "section": student_result["section"],
                 "subjects": subject_values,
-                "total_obtained": total_obtained,
-                "total_max_marks": total_max_marks,
+                "total_obtained": (
+                    total_obtained if has_any_marks else None
+                ),
+                "total_max_marks": (
+                    total_max_marks if has_any_marks else None
+                ),
                 "total_display": (
                     f"{total_obtained:g}/{total_max_marks:g}"
+                    if has_any_marks
+                    else "—"
                 ),
                 "percentage": percentage,
             })
+
 
         # Highest percentage first; equal percentages use total marks.
         results.sort(
@@ -791,6 +846,8 @@ def get_consolidated_report(
                 "class_id": class_id,
                 "section": section,
                 "assessment_type": assessment_type,
+                "assessment_id": assessment_id,
+                "exam_id": exam_id,
             },
             "subjects": subjects,
             "count": len(results),
@@ -841,6 +898,108 @@ def get_consolidated_report(
             "results": [dict(row) for row in rows],
         }
 
+    # ================= SCHOOL-WIDE CLASS SUMMARY =================
+
+    if view == "SCHOOL" and report_type == "SUMMARY":
+        school_summary_query = text(
+            base_query
+            + """
+            , class_summary AS (
+                SELECT
+                    rd.class_id,
+                    COUNT(DISTINCT rd.subject) AS subjects_count,
+                    COUNT(DISTINCT rd.assessment_id) AS tests_conducted,
+
+                    COUNT(*) FILTER (
+                        WHERE rd.is_absent IS NOT TRUE
+                          AND rd.marks_obtained IS NOT NULL
+                    ) AS present_count,
+
+                    COUNT(*) FILTER (
+                        WHERE rd.is_absent IS TRUE
+                           OR rd.marks_obtained IS NULL
+                    ) AS absent_count,
+
+                    ROUND(AVG(rd.calculated_percentage), 2)
+                        AS average_percentage
+
+                FROM report_data rd
+                WHERE EXISTS (
+                    SELECT 1
+                    FROM public.sgs_assessments a2
+                    WHERE a2.assessment_id = rd.assessment_id
+                      AND a2.class_id IS NOT NULL
+                )
+                GROUP BY rd.class_id
+            )
+
+            SELECT
+                c.class_id,
+                c.class_name,
+
+                COUNT(DISTINCT COALESCE(
+                    NULLIF(TRIM(s.section), ''),
+                    NULLIF(TRIM(c.section_name), ''),
+                    'Unknown'
+                )) AS sections_count,
+
+                COUNT(DISTINCT s.student_id) AS students_count,
+
+                COALESCE(MAX(cs.subjects_count), 0)
+                    AS subjects_count,
+
+                COALESCE(MAX(cs.tests_conducted), 0)
+                    AS tests_conducted,
+
+                COALESCE(MAX(cs.present_count), 0)
+                    AS present_count,
+
+                COALESCE(MAX(cs.absent_count), 0)
+                    AS absent_count,
+
+                MAX(cs.average_percentage)
+                    AS average_percentage
+
+            FROM public.sgs_class_master c
+
+            LEFT JOIN public.sgs_student_master s
+                ON s.class_id = c.class_id
+               AND s.record_status = 'Active'
+
+            LEFT JOIN class_summary cs
+                ON cs.class_id = c.class_id
+
+            WHERE c.record_status = 'Active'
+              AND c.class_name IS NOT NULL
+              AND TRIM(c.class_name) <> ''
+
+            GROUP BY c.class_id, c.class_name
+            ORDER BY c.class_name
+            """
+        )
+
+        rows = db.execute(
+            school_summary_query,
+            params,
+        ).mappings().all()
+
+        return {
+            "view": "SCHOOL",
+            "report_type": "SUMMARY",
+            "filters": {
+                "month": month,
+                "year": year,
+                "class_id": class_id,
+                "section": section,
+                "subject": subject,
+                "assessment_type": assessment_type,
+                "assessment_id": assessment_id,
+                "exam_id": exam_id,
+            },
+            "count": len(rows),
+            "results": [dict(row) for row in rows],
+            "test_results": [],
+        }
       # Simple consolidated summary
     grouping = {
         "CLASS": ("class_name", "class_name"),
@@ -948,6 +1107,7 @@ def get_consolidated_report(
             "subject": subject,
             "assessment_type": assessment_type,
             "assessment_id": assessment_id,
+              "exam_id": exam_id,
         },
         "count": len(rows),
         "results": [dict(row) for row in rows],

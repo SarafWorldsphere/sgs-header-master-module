@@ -1,0 +1,120 @@
+
+.notificationsContent {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  padding: 24px;
+  color: #f1f5f9;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.card {
+  width: 100%;
+  min-width: 0;
+  padding: 26px;
+  border: 1px solid #2a4168;
+  border-radius: 18px;
+  background: linear-gradient(145deg, #101d36, #0d1930);
+  color: #e5edf9;
+}
+
+.pageHeader {
+  margin-bottom: 24px;
+}
+
+.pageHeader h2 {
+  margin: 0;
+  color: #f8fafc;
+  font-size: 25px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+}
+
+.tableWrapper {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #263b5c;
+  border-radius: 12px;
+  background: #0b172c;
+}
+
+.table {
+  width: 100%;
+  min-width: 700px;
+  border-collapse: separate;
+  border-spacing: 0;
+  text-align: left;
+}
+
+.table thead {
+  background: #172742;
+}
+
+.table th {
+  padding: 15px 17px;
+  border-bottom: 1px solid #2a4168;
+  background: #172742;
+  color: #a9c2e8;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.45px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 15px 17px;
+  border-bottom: 1px solid #223654;
+  background: transparent;
+  color: #dce7f8;
+  font-size: 14px;
+}
+
+.table tbody tr {
+  transition: background 0.18s ease;
+}
+
+.table tbody tr:hover {
+  background: #1a2b49;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.table td[colSpan="4"] {
+  padding: 32px;
+  color: #94a3b8;
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .notificationsContent {
+    padding: 16px;
+  }
+
+  .card {
+    padding: 18px;
+  }
+}
+
+@media (max-width: 600px) {
+  .notificationsContent {
+    padding: 10px;
+  }
+
+  .card {
+    padding: 14px;
+    border-radius: 12px;
+  }
+
+  .pageHeader h2 {
+    font-size: 21px;
+  }
+
+  .table th,
+  .table td {
+    padding: 12px;
+  }
+}

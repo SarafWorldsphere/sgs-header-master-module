@@ -3,6 +3,7 @@
 
 
 import React, { useEffect, useMemo, useState } from "react";
+import styles from "../app/styles/reports.module.css";
 
 import axios from "axios";
 import {
@@ -24,6 +25,8 @@ const api = axios.create({
 export default function ReportsSection() {
   const [activeReportTab, setActiveReportTab] = useState("student");
  const [consolidatedView, setConsolidatedView] = useState("section");
+ const [schoolReportMode, setSchoolReportMode] =
+  useState("CLASS_WISE");
   const [consolidatedType, setConsolidatedType] =
   useState("SUMMARY");
 
@@ -74,6 +77,7 @@ const [expandedSubjectRows, setExpandedSubjectRows] = useState({});
   const [month, setMonth] = useState("");
   const [year, setYear] = useState(String(new Date().getFullYear()));
   const [subject, setSubject] = useState("");
+  const [consolidatedMessage, setConsolidatedMessage] = useState("");
 
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -434,38 +438,130 @@ const selectedReportType =
   }
 
 async function generateConsolidatedReport() {
-  if (consolidatedView === "section" && !consolidatedClass) {
+  const isSchoolWide = consolidatedView === "school";
+
+  if (
+    consolidatedView === "section" &&
+    !consolidatedClass
+  ) {
     setConsolidatedError("Please select a class.");
+    return;
+  }
+
+  if (
+    isSchoolWide &&
+    ["MERIT_LIST", "SECTION_WISE_MERIT", "SUBJECT_WISE_MERIT"]
+      .includes(schoolReportMode) &&
+    !consolidatedClass
+  ) {
+    setConsolidatedError("Please select a class.");
+    return;
+  }
+
+  if (
+    isSchoolWide &&
+    schoolReportMode === "SUBJECT_WISE_MERIT" &&
+    !consolidatedSubject
+  ) {
+    setConsolidatedError("Please select a subject.");
     return;
   }
 
   setConsolidatedLoading(true);
   setConsolidatedError("");
+  setConsolidatedMessage("");
   setConsolidatedData([]);
+  setConsolidatedTestResults([]);
   setConsolidatedGenerated(false);
 
   try {
+    const selectedExamId = consolidatedAssessmentId.startsWith("EXAM:")
+      ? Number(consolidatedAssessmentId.split(":")[1])
+      : undefined;
+
+    const selectedAssessmentId =
+      consolidatedAssessmentId.startsWith("ASSESSMENT:") &&
+      consolidatedAssessmentId !== "ASSESSMENT:0"
+        ? Number(consolidatedAssessmentId.split(":")[1])
+        : undefined;
+
+    const isWeeklyTest =
+      consolidatedAssessmentId === "ASSESSMENT:0" ||
+      consolidatedAssessmentId.startsWith("ASSESSMENT:");
+
+    let view = "SCHOOL";
+    let outputFormat = "SUMMARY";
+
+    if (!isSchoolWide) {
+      view = consolidatedView === "section" ? "SECTION" : "SUBJECT";
+      outputFormat =
+        consolidatedView === "section" ? "MATRIX" : "SUMMARY";
+    } else {
+      switch (schoolReportMode) {
+        case "CLASS_WISE":
+          view = "SCHOOL";
+          outputFormat = "SUMMARY";
+          break;
+
+        case "MERIT_LIST":
+          view = "TEST";
+          outputFormat = "MATRIX";
+          break;
+
+        case "SECTION_WISE_MERIT":
+          view = "SECTION";
+          outputFormat = "MATRIX";
+          break;
+
+        case "SUBJECT_WISE_MERIT":
+          view = "SUBJECT";
+          outputFormat = "MATRIX";
+          break;
+
+        case "ABSENTEES_LIST":
+          view = "SCHOOL";
+          outputFormat = "SUMMARY";
+          break;
+
+        default:
+          throw new Error("Invalid School-wide report mode.");
+      }
+    }
+
     const params = {
-      view:
-        consolidatedView === "section"
-          ? "SECTION"
-          : consolidatedView === "subject"
-            ? "SUBJECT"
-            : "SCHOOL",
-      report_type: "SUMMARY",
+      view,
+      report_type:
+        isSchoolWide && schoolReportMode === "ABSENTEES_LIST"
+          ? "ABSENT"
+          : "SUMMARY",
       month: consolidatedMonth || undefined,
       year: consolidatedYear || undefined,
-      class_id: consolidatedClass || undefined,
-      section: consolidatedView === "section"
-        ? consolidatedSection || undefined
-        : undefined,
-      subject: consolidatedView === "subject"
-        ? consolidatedSubject || undefined
-        : undefined,
-      assessment_type: consolidatedAssessmentType,
-      output_format: consolidatedView === "section"
-        ? "MATRIX"
-        : "SUMMARY",
+      class_id: isSchoolWide
+        ? (
+            schoolReportMode === "CLASS_WISE" ||
+            schoolReportMode === "ABSENTEES_LIST"
+              ? undefined
+              : consolidatedClass || undefined
+          )
+        : consolidatedClass || undefined,
+      section:
+        !isSchoolWide && consolidatedView === "section"
+          ? consolidatedSection || undefined
+          : undefined,
+      subject:
+        (!isSchoolWide && consolidatedView === "subject") ||
+        (isSchoolWide &&
+          schoolReportMode === "SUBJECT_WISE_MERIT")
+          ? consolidatedSubject || undefined
+          : undefined,
+      assessment_type: isWeeklyTest
+        ? "CT"
+        : selectedExamId
+          ? "PT"
+          : "ALL",
+      assessment_id: selectedAssessmentId,
+      exam_id: selectedExamId,
+      output_format: outputFormat,
     };
 
     const response = await api.get(
@@ -473,23 +569,26 @@ async function generateConsolidatedReport() {
       { params }
     );
 
-   
-const results = Array.isArray(response.data?.results)
-  ? response.data.results
-  : [];
+    setConsolidatedMessage(response.data?.message || "");
 
-const testResults = Array.isArray(response.data?.test_results)
-  ? response.data.test_results
-  : [];
+    setConsolidatedData(
+      Array.isArray(response.data?.results)
+        ? response.data.results
+        : []
+    );
 
-setConsolidatedData(results);
-setConsolidatedTestResults(testResults);
-setExpandedSubjectRows({});
-setConsolidatedGenerated(true);
+    setConsolidatedTestResults(
+      Array.isArray(response.data?.test_results)
+        ? response.data.test_results
+        : []
+    );
 
+    setExpandedSubjectRows({});
+    setConsolidatedGenerated(true);
   } catch (err) {
     setConsolidatedError(
       err.response?.data?.detail ||
+        err.message ||
         "Unable to generate consolidated report."
     );
   } finally {
@@ -1138,12 +1237,56 @@ function exportConsolidatedPDF() {
       ))}
     </div>
 
+    {consolidatedView === "school" && (
+  <div className="consolidated-options school-report-tabs">
+    {[
+      { id: "CLASS_WISE", label: "Class Wise" },
+      { id: "MERIT_LIST", label: "Merit List" },
+      {
+        id: "SECTION_WISE_MERIT",
+        label: "Section Wise Merit List",
+      },
+      {
+        id: "SUBJECT_WISE_MERIT",
+        label: "Subject Wise Merit List",
+      },
+      { id: "ABSENTEES_LIST", label: "Absentees List" },
+    ].map(({ id, label }) => (
+      <button
+        key={id}
+        type="button"
+        className={`consolidated-option ${
+          schoolReportMode === id ? "active" : ""
+        }`}
+        onClick={() => {
+          setSchoolReportMode(id);
+          setConsolidatedData([]);
+          setConsolidatedTestResults([]);
+          setExpandedSubjectRows({});
+          setConsolidatedGenerated(false);
+          setConsolidatedError("");
+          setConsolidatedMessage("");
+        }}
+      >
+        {label}
+      </button>
+    ))}
+  </div>
+)}
+
     {/* Filters */}
     <div className="consolidated-filter-panel">
       <h4>Report Filters</h4>
 
       <div className="report-filters">
-        {consolidatedView !== "school" && (
+       {(
+  consolidatedView !== "school" ||
+  (
+    consolidatedView === "school" &&
+    ["MERIT_LIST", "SECTION_WISE_MERIT", "SUBJECT_WISE_MERIT"]
+      .includes(schoolReportMode)
+  )
+) && (
           <label className="student-filter">
             Class
             <select
@@ -1274,14 +1417,26 @@ function exportConsolidatedPDF() {
   Assessment
   <select
     value={consolidatedAssessmentId}
-    onChange={(e) => {
-      setConsolidatedAssessmentId(e.target.value);
-      setConsolidatedData([]);
-      setConsolidatedTestResults([]);
-      setExpandedSubjectRows({});
-      setConsolidatedGenerated(false);
-      setConsolidatedError("");
-    }}
+   
+onChange={(e) => {
+  const value = e.target.value;
+
+  setConsolidatedAssessmentId(value);
+  setConsolidatedAssessmentType(
+    value === "ASSESSMENT:0"
+      ? "CT"
+      : value.startsWith("EXAM:")
+        ? "PT"
+        : "ALL"
+  );
+
+  setConsolidatedData([]);
+  setConsolidatedTestResults([]);
+  setExpandedSubjectRows({});
+  setConsolidatedGenerated(false);
+  setConsolidatedError("");
+}}
+
   >
     <option value="">All Assessments</option>
 
@@ -1577,12 +1732,15 @@ function exportConsolidatedPDF() {
         </div>
       )}
 
-    {!consolidatedLoading &&
-      consolidatedGenerated &&
-      consolidatedData.length === 0 &&
-      !consolidatedError && (
-        <p>No report data found for the selected filters.</p>
-      )}
+   {!consolidatedLoading &&
+  consolidatedGenerated &&
+  consolidatedData.length === 0 &&
+  !consolidatedError && (
+    <p>
+      {consolidatedMessage ||
+        "No report data found for the selected filters."}
+    </p>
+  )}
 
     {!consolidatedLoading &&
       !consolidatedGenerated &&
