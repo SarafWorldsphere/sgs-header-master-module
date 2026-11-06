@@ -1,0 +1,199 @@
+.topbar {
+  position: fixed;
+  top: 0;
+  left: 270px;
+  right: 0;
+  z-index: 1000;
+  height: 76px;
+  padding: 0 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+
+  background: linear-gradient(
+    110deg,
+    #24234f 0%,
+    #29285c 55%,
+    #30306b 100%
+  );
+
+  border-bottom: 1px solid rgba(99, 102, 241, 0.22);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.18);
+}
+.profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.profileIcon {
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #60a5fa;
+  flex-shrink: 0;
+}
+
+.profileContent {
+  min-width: 0;
+}
+
+.profileContent h3 {
+  color: #ffffff;
+  font-size: 17px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profileContent p {
+  color: #b8c2df;
+  font-size: 12px;
+  margin-top: 3px;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.aiButton,
+.notificationButton {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 11px;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.aiButton {
+  padding: 0 16px;
+  gap: 8px;
+  background: #2563eb;
+  border: 1px solid #3b82f6;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.aiButton:hover {
+  background: #1d4ed8;
+}
+
+.notificationButton {
+  width: 44px;
+  position: relative;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.notificationButton:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.notificationBadge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 20px;
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.menuButton {
+  display: none;
+}
+
+.spacer {
+  height: 76px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 900px) {
+  .topbar {
+    left: 0;
+    height: 68px;
+    padding: 0 14px;
+    gap: 10px;
+  }
+
+  .spacer {
+    height: 68px;
+  }
+
+  .menuButton {
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border: none;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+    cursor: pointer;
+  }
+
+  .menuButton:hover {
+    background: rgba(255, 255, 255, 0.16);
+  }
+
+  .profile {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .profileContent h3 {
+    font-size: 14px;
+  }
+
+  .profileContent p {
+    font-size: 11px;
+  }
+
+  .actions {
+    gap: 8px;
+  }
+
+  .aiButton {
+    height: 40px;
+    padding: 0 10px;
+    font-size: 12px;
+  }
+
+  .notificationButton {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+@media (max-width: 400px) {
+  .topbar {
+    padding: 0 8px;
+    gap: 6px;
+  }
+
+  .profileIcon {
+    display: none;
+  }
+
+  .aiButton {
+    padding: 0 8px;
+  }
+}

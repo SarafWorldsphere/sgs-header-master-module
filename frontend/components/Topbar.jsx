@@ -1,242 +1,67 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import {
-  Shield,
-  Bell,
-  Search,
-  Mic,
-  Volume2,
-  Languages,
-  Check,
-  ChevronDown,
-  Bot,
-  Menu,
-} from "lucide-react";
-
-import useVoice from "../hooks/useVoice";
+import { Bell, Bot, Menu, Shield } from "lucide-react";
+import styles from "./Topbar.module.css";
 
 export default function Topbar({
   headmaster,
-  searchText,
-  setSearchText,
   notificationCount = 0,
-  language,
-  setLanguage,
   onOpenAI,
   onOpenNotifications,
   sidebarOpen,
   setSidebarOpen,
 }) {
-  const { startVoice, listening } = useVoice();
-
-  const [showLangMenu, setShowLangMenu] = useState(false);
-  const langRef = useRef(null);
-
-  const languages = [
-    { label: "English", value: "English" },
-    { label: "తెలుగు", value: "Telugu" },
-    { label: "हिन्दी", value: "Hindi" },
-  ];
-
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (langRef.current && !langRef.current.contains(e.target)) {
-        setShowLangMenu(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
-
-  const speakText = (text) => {
-    if (!text || !text.trim()) return;
-
-    window.speechSynthesis.cancel();
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "en-US";
-    utterance.rate = 1;
-
-    window.speechSynthesis.speak(utterance);
-  };
-
-  const handleVoiceInput = () => {
-    startVoice((text) => {
-      if (!text) return;
-
-      setSearchText("");
-
-      let i = 0;
-
-      const interval = setInterval(() => {
-        setSearchText(text.slice(0, i));
-        i++;
-
-        if (i > text.length) {
-          clearInterval(interval);
-        }
-      }, 12);
-    });
-  };
-
   return (
-    <div className="topbar">
-      {/* Mobile Menu */}
-      <button
-        className="mobile-menu-btn"
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-        type="button"
-        aria-label="Open menu"
-      >
-        <Menu size={24} />
-      </button>
-
-      {/* Profile */}
-      <div className="profile-card">
-        <Shield size={22} />
-
-        <div className="profile-content">
-          <h3>
-            Welcome {headmaster?.name || "Headmaster"}
-          </h3>
-
-          <p>
-            {headmaster?.role || "Headmaster Access"}
-          </p>
-        </div>
-      </div>
-
-      {/* Search */}
-      <div className="topbar-left">
-        <div className="search-box">
-          <div className="search-icon">
-            <Search size={18} />
-          </div>
-
-          <input
-            type="text"
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            placeholder="Search students..."
-            className="search-input"
-          />
-
-          <div className="search-actions">
-            {/* Speak */}
-            <button
-              className="speak-btn"
-              onClick={() => speakText(searchText)}
-              title="Speak text"
-              type="button"
-            >
-              <Volume2 size={16} />
-            </button>
-
-            {/* Voice Input */}
-            <button
-              className={`mic-btn ${listening ? "active" : ""}`}
-              onClick={handleVoiceInput}
-              title="Voice input"
-              type="button"
-            >
-              <Mic size={16} />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Right Controls */}
-      <div className="topbar-right">
-        {/* AI Tools */}
+    <>
+      <header className={styles.topbar}>
         <button
-          className="ai-btn"
-          onClick={onOpenAI}
+          className={styles.menuButton}
+          onClick={() => setSidebarOpen?.(!sidebarOpen)}
           type="button"
+          aria-label="Open menu"
         >
-          <Bot size={18} />
-          <span>AI Tools</span>
+          <Menu size={22} />
         </button>
 
-        {/* Language */}
-        <div className="language-wrapper" ref={langRef}>
-          <button
-            className="language-btn"
-            type="button"
-            onClick={() => setShowLangMenu((prev) => !prev)}
-          >
-            <Languages size={18} />
+        <div className={styles.profile}>
+          <div className={styles.profileIcon}>
+            <Shield size={23} />
+          </div>
 
-            <span>
-              {languages.find(
-                (lang) => lang.value === language
-              )?.label || language}
-            </span>
-
-            <ChevronDown
-              size={16}
-              className={showLangMenu ? "rotate" : ""}
-            />
-          </button>
-
-          {showLangMenu && (
-            <div className="language-dropdown">
-              {languages.map((lang) => (
-                <button
-                  key={lang.value}
-                  type="button"
-                  className={`language-item ${
-                    language === lang.value ? "selected" : ""
-                  }`}
-                  onClick={() => {
-                    setLanguage(lang.value);
-                    setShowLangMenu(false);
-                  }}
-                >
-                  <span>{lang.label}</span>
-
-                  {language === lang.value && (
-                    <Check size={16} />
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
+          <div className={styles.profileContent}>
+            <h3>Welcome {headmaster?.name || "Headmaster"}</h3>
+            <p>{headmaster?.role || "Headmaster Access"}</p>
+          </div>
         </div>
 
-        {/* Notifications */}
-        <div className="notification-bell">
+        <div className={styles.actions}>
           <button
+            className={styles.aiButton}
+            onClick={onOpenAI}
             type="button"
+          >
+            <Bot size={19} />
+            <span>AI Tools</span>
+          </button>
+
+          <button
+            className={styles.notificationButton}
             onClick={onOpenNotifications}
+            type="button"
             aria-label="Notifications"
           >
-            <Bell size={18} />
+            <Bell size={20} />
 
             {notificationCount > 0 && (
-              <span className="notification-badge">
-                {notificationCount}
+              <span className={styles.notificationBadge}>
+                {notificationCount > 99 ? "99+" : notificationCount}
               </span>
             )}
           </button>
         </div>
+      </header>
 
-        {/* School Logo */}
-        <div className="brand">
-          <div className="brand-logo">
-            <img
-              src="/headmaster/swais-logo.jpeg"
-              alt="School Logo"
-              width="50"
-              height="50"
-            />
-          </div>
-        </div>
-      </div>
-    </div>
+      <div className={styles.spacer} />
+    </>
   );
 }

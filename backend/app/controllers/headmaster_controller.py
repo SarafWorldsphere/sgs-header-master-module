@@ -28,6 +28,8 @@ def get_assignment_report(db: Session, data: dict, user_info: dict):
             SUM(CASE WHEN marks_obtained IS NULL OR is_absent = true THEN 1 ELSE 0 END) AS missing
         FROM sgs_assessment_results
     """)).mappings().first()
+        # Release DB connection before waiting for Gemini API
+    db.commit()
 
     prompt = f"""
 You are SGS AI Executive Assistant for the Headmaster.
@@ -231,6 +233,8 @@ def get_academic_analytics(db: Session, payload: dict, user_info: dict):
         }
 
     print("SQL RESULT:", [dict(r) for r in data])
+        # Release read-only DB transaction before external Gemini API call
+    db.rollback()
 
     # ------------------------------------------
     # CLEAN DATA
@@ -386,6 +390,8 @@ def get_teacher_performance(db: Session, data: dict, user_info: dict):
         GROUP BY u.full_name
         ORDER BY assessments_created DESC
     """)).mappings().all()
+        # Release DB connection before waiting for Gemini API
+    db.commit()
 
     prompt = f"""
 You are SGS AI School Performance Advisor.
