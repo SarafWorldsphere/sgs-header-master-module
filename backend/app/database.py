@@ -1,28 +1,9 @@
-
-import logging
-from threading import BoundedSemaphore
-
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
-
 from app.pool import build_engine
 from app.config import settings
-
-log = logging.getLogger(__name__)
-
-# Current pool maximum:
-# pool_size=1 + max_overflow=4 = 5
-#
-# Allow only 4 request sessions at a time.
-# Remaining requests wait here instead of exhausting QueuePool.
-DB_MAX_CONCURRENT_SESSIONS = 4
-
-_db_session_slots = BoundedSemaphore(
-    value=DB_MAX_CONCURRENT_SESSIONS
-)
+from sqlalchemy.orm import sessionmaker, declarative_base
 
 
-# Create database engine
+# Create engine
 engine = build_engine(
     settings.DATABASE_URL,
     service="sgs-headmaster-api",
@@ -30,14 +11,8 @@ engine = build_engine(
     reserve=settings.DB_RESERVE
 )
 
-log.warning(
-    "[DB READY] %s | Maximum concurrent request sessions: %s",
-    engine.pool.status(),
-    DB_MAX_CONCURRENT_SESSIONS
-)
 
-
-# Session factory
+# Session
 SessionLocal = sessionmaker(
     autocommit=False,
     autoflush=False,
@@ -49,20 +24,10 @@ SessionLocal = sessionmaker(
 Base = declarative_base()
 
 
-# Database dependency with concurrency control
+# Dependency
 def get_db():
-    _db_session_slots.acquire()
-
-    db = None
-
+    db = SessionLocal()
     try:
-        db = SessionLocal()
         yield db
-
     finally:
-        try:
-            if db is not None:
-                db.close()
-
-        finally:
-            _db_session_slots.release()
+        db.close()

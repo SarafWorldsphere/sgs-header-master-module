@@ -101,13 +101,19 @@ def get_teachers(
                         )
                         ORDER BY m.class_id, m.section, m.subject_name
                     )
-                    FROM public.sgs_teacher_class_map m
-                    LEFT JOIN public.sgs_class_master cm
-                        ON cm.class_id = m.class_id
-                       AND TRIM(COALESCE(cm.section_name, ''))
-                           = TRIM(COALESCE(m.section, ''))
-                    WHERE m.teacher_id = t.teacher_id
-                      AND m.record_status = 'Active'
+                   FROM public.sgs_teacher_class_map m
+
+LEFT JOIN (
+    SELECT
+        class_id,
+        MAX(NULLIF(TRIM(class_name), '')) AS class_name
+    FROM public.sgs_class_master
+    GROUP BY class_id
+) cm
+    ON cm.class_id = m.class_id
+
+WHERE m.teacher_id = t.teacher_id
+  AND m.record_status = 'Active'
                 ),
                 '[]'::json
             ) AS assignments

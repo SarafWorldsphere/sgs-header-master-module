@@ -172,21 +172,56 @@ def dashboard_core(db: Session = Depends(get_db)):
 
     started_at = perf_counter()
 
+    print("\n[DASHBOARD] ROUTE ENTERED", flush=True)
+
     try:
+        # -------------------------------------------------
+        # STEP 1: DATABASE CONNECTION
+        # -------------------------------------------------
+
+        connection_started = perf_counter()
+
+        print("[DASHBOARD] BEFORE DB CONNECTION", flush=True)
+
+        db.connection()
+
+        connection_duration = perf_counter() - connection_started
+
+        print(
+            f"[DASHBOARD] DB CONNECTION READY: "
+            f"{connection_duration:.3f} seconds",
+            flush=True
+        )
+
+        # -------------------------------------------------
+        # STEP 2: EXECUTE DASHBOARD SQL
+        # -------------------------------------------------
+
+        query_started = perf_counter()
+
+        print("[DASHBOARD] BEFORE SQL QUERY", flush=True)
+
         result = (
             db.execute(text(DASHBOARD_QUERY))
             .mappings()
             .fetchone()
         )
 
-        query_duration = perf_counter() - started_at
+        query_duration = perf_counter() - query_started
 
-        logger.info(
-            "[DASHBOARD] SQL completed in %.3f seconds",
-            query_duration
+        print(
+            f"[DASHBOARD] SQL QUERY COMPLETED: "
+            f"{query_duration:.3f} seconds",
+            flush=True
         )
 
+        # -------------------------------------------------
+        # STEP 3: HANDLE EMPTY RESULT
+        # -------------------------------------------------
+
         if not result:
+            print("[DASHBOARD] EMPTY RESULT", flush=True)
+
             return {
                 "summary": {},
                 "performance": [],
@@ -197,6 +232,10 @@ def dashboard_core(db: Session = Depends(get_db)):
                 "headmaster": {},
                 "unread_count": 0,
             }
+
+        # -------------------------------------------------
+        # STEP 4: BUILD RESPONSE
+        # -------------------------------------------------
 
         row = dict(result)
 
@@ -219,16 +258,47 @@ def dashboard_core(db: Session = Depends(get_db)):
             "unread_count": row.get("unread_count") or 0,
         }
 
+        # -------------------------------------------------
+        # STEP 5: TOTAL EXECUTION TIME
+        # -------------------------------------------------
+
+        total_duration = perf_counter() - started_at
+
+        print(
+            f"[DASHBOARD] TOTAL ENDPOINT TIME: "
+            f"{total_duration:.3f} seconds",
+            flush=True
+        )
+
         logger.info(
-            "[DASHBOARD] Total endpoint time: %.3f seconds",
-            perf_counter() - started_at
+            "[DASHBOARD] Completed successfully in %.3f seconds",
+            total_duration
         )
 
         return response
 
-    except Exception:
+    except Exception as exc:
+
+        total_duration = perf_counter() - started_at
+
+        print(
+            f"[DASHBOARD] ERROR AFTER {total_duration:.3f} seconds",
+            flush=True
+        )
+
+        print(
+            f"[DASHBOARD] ERROR TYPE: {type(exc).__name__}",
+            flush=True
+        )
+
+        print(
+            f"[DASHBOARD] ERROR DETAILS: {str(exc)}",
+            flush=True
+        )
+
         logger.exception(
             "[DASHBOARD] Failed after %.3f seconds",
-            perf_counter() - started_at
+            total_duration
         )
+
         raise

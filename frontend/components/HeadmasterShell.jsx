@@ -33,21 +33,25 @@ export const useHeadmaster = () => {
 };
 
 // Detailed API error logging for debugging
-const logApiError = (label, error, startedAt) => {
+function logApiError(label, error) {
   if (axios.isCancel(error)) return;
 
-  console.error(label, {
-    url: error.config?.url,
-    baseURL: error.config?.baseURL,
-    method: error.config?.method?.toUpperCase(),
-    timeout: error.config?.timeout,
-    durationMs: Date.now() - startedAt,
-    errorCode: error.code,
-    status: error.response?.status,
-    response: error.response?.data,
-    message: error.message,
+  console.error(`[${label}] ACTUAL ERROR:`, error);
+
+  console.error(`[${label}] ERROR DETAILS:`, {
+    isAxiosError: axios.isAxiosError(error),
+    name: error?.name,
+    message: error?.message || String(error),
+    code: error?.code,
+    url: error?.config?.url,
+    baseURL: error?.config?.baseURL,
+    method: error?.config?.method?.toUpperCase(),
+    timeout: error?.config?.timeout,
+    status: error?.response?.status,
+    response: error?.response?.data,
+    stack: error?.stack,
   });
-};
+}
 
 export default function HeadmasterShell({ children }) {
   useAuthGuard();
