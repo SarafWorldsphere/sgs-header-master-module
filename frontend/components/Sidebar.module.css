@@ -1,0 +1,180 @@
+.sidebar {
+  width: 270px;
+  min-width: 270px;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  z-index: 1100;
+  overflow-y: auto;
+  flex-shrink: 0;
+  padding: 22px 18px;
+  color: #fff;
+  background: linear-gradient(
+    135deg,
+    #0f172a 0%,
+    #1e1b4b 50%,
+    #0f172a 100%
+  );
+}
+
+.sidebarContent {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.brand {
+  text-align: center;
+  margin-bottom: 35px;
+}
+
+.logoCircle {
+  width: 90px;
+  height: 90px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #fff;
+}
+
+.logoCircle img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.brand h2 {
+  margin-bottom: 5px;
+  font-size: 30px;
+  font-weight: 800;
+}
+
+.brand p {
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+.menuList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.menuButton {
+  width: 100%;
+  min-height: 48px;
+  padding: 13px 15px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  color: #fff;
+  text-align: left;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.menuButton:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.menuButton.active {
+  background: #2563eb;
+}
+
+.menuButton.logout {
+  margin-top: 12px;
+  color: #fecaca;
+}
+
+.menuButton.logout:hover {
+  background: rgba(239, 68, 68, 0.16);
+}
+
+.overlay {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100dvh;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    z-index: 1200;
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 1150;
+    border: 0;
+    background: rgba(0, 0, 0, 0.55);
+  }
+}
+
+/* Custom Sidebar Scrollbar */
+
+.sidebar {
+  scrollbar-width: thin;
+  scrollbar-color: #4b4b82 transparent;
+}
+
+.sidebar::-webkit-scrollbar {
+  width: 5px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: #4b4b82;
+  border-radius: 10px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: #3b82f6;
+}
+
+.closeButton {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .closeButton {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    cursor: pointer;
+    z-index: 10;
+  }
+
+  .closeButton:hover {
+    background: #2563eb;
+  }
+
+  .brand {
+    margin-top: 25px;
+  }
+}

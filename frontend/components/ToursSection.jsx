@@ -1,4 +1,9 @@
-export default function ToursSection({ toursData }) {
+
+export default function ToursSection({
+  toursData = [],
+  loaded = false,
+  error = "",
+}) {
   return (
     <div className="page-card">
       <div className="page-header">
@@ -18,15 +23,31 @@ export default function ToursSection({ toursData }) {
           </thead>
 
           <tbody>
-            {toursData.map((tour) => (
-              <tr key={tour.event_id}>
-                <td>{tour.event_title}</td>
-                <td>{tour.event_description}</td>
-                <td>{tour.event_date}</td>
-                <td>{tour.applicable_class}</td>
-                <td>{tour.record_status}</td>
+            {!loaded ? (
+              <tr>
+                <td colSpan={5}>Loading school tours...</td>
               </tr>
-            ))}
+            ) : error ? (
+              <tr>
+                <td colSpan={5} style={{ color: "#f87171" }}>
+                  {error}
+                </td>
+              </tr>
+            ) : toursData.length === 0 ? (
+              <tr>
+                <td colSpan={5}>No school tours found.</td>
+              </tr>
+            ) : (
+              toursData.map((tour) => (
+                <tr key={tour.event_id}>
+                  <td>{tour.event_title || "-"}</td>
+                  <td>{tour.event_description || "-"}</td>
+                  <td>{tour.event_date || "-"}</td>
+                  <td>{tour.applicable_class || "-"}</td>
+                  <td>{tour.record_status || "-"}</td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

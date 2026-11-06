@@ -106,19 +106,19 @@ def get_students(
         WHERE s.record_status = 'Active'
           AND s.full_name IS NOT NULL
           AND TRIM(s.full_name) <> ''
-          AND (
-              :class_name IS NULL
-              OR TRIM(c.class_name) = TRIM(:class_name)
-          )
-          AND (
-              :section IS NULL
-              OR TRIM(
-                  COALESCE(
-                      NULLIF(TRIM(s.section), ''),
-                      c.section_name
-                  )
-              ) = TRIM(:section)
-          )
+       AND (
+    CAST(:class_name AS TEXT) IS NULL
+    OR TRIM(c.class_name) = TRIM(CAST(:class_name AS TEXT))
+)
+AND (
+    CAST(:section AS TEXT) IS NULL
+    OR TRIM(
+        COALESCE(
+            NULLIF(TRIM(s.section), ''),
+            c.section_name
+        )
+    ) = TRIM(CAST(:section AS TEXT))
+)
         ORDER BY c.class_name, section_name, s.admission_no;
     """
 
@@ -262,40 +262,42 @@ def get_student_assessment_report(
               )
           )
 
-          -- Filter by assessment date's month and year.
-          AND (
-              :month IS NULL
-              OR EXTRACT(MONTH FROM a.assessment_date) = :month
-          )
-          AND (
-              :year IS NULL
-              OR EXTRACT(YEAR FROM a.assessment_date) = :year
-          )
+         -- Month filter
+AND (
+    CAST(:month AS INTEGER) IS NULL
+    OR EXTRACT(MONTH FROM a.assessment_date)
+       = CAST(:month AS INTEGER)
+)
 
-          -- Optional subject filter.
-          AND (
-              :subject IS NULL
-              OR TRIM(a.subject) = TRIM(:subject)
-          )
+-- Year filter
+AND (
+    CAST(:year AS INTEGER) IS NULL
+    OR EXTRACT(YEAR FROM a.assessment_date)
+       = CAST(:year AS INTEGER)
+)
 
-          -- Exam selection or an explicitly selected assessment.
-          -- For the Weekly Test option, send assessment_id=NULL
-          -- so all matching CT assessments can be returned.
-          AND (
-              (
-                  :exam_id IS NULL
-                  AND :assessment_id IS NULL
-              )
-              OR (
-                  :exam_id IS NOT NULL
-                  AND a.exam_id = :exam_id
-              )
-              OR (
-                  :assessment_id IS NOT NULL
-                  AND a.assessment_id = :assessment_id
-                  AND a.exam_id IS NULL
-              )
-          )
+-- Subject filter
+AND (
+    CAST(:subject AS TEXT) IS NULL
+    OR TRIM(a.subject) = TRIM(CAST(:subject AS TEXT))
+)
+
+-- Exam / Assessment filter
+AND (
+    (
+        CAST(:exam_id AS BIGINT) IS NULL
+        AND CAST(:assessment_id AS BIGINT) IS NULL
+    )
+    OR (
+        CAST(:exam_id AS BIGINT) IS NOT NULL
+        AND a.exam_id = CAST(:exam_id AS BIGINT)
+    )
+    OR (
+        CAST(:assessment_id AS BIGINT) IS NOT NULL
+        AND a.assessment_id = CAST(:assessment_id AS BIGINT)
+        AND a.exam_id IS NULL
+    )
+)
 
           -- CT = class-linked assessments with no scheduled exam.
           -- PT = assessments linked to a scheduled exam.
@@ -418,7 +420,10 @@ def get_consolidated_subjects(
             ON LOWER(TRIM(a.subject)) = LOWER(TRIM(sm.subject_name))
         WHERE sm.record_status = 'Active'
           AND a.record_status = 'Active'
-          AND (:class_id IS NULL OR sm.class_id = :class_id)
+       AND (
+    CAST(:class_id AS TEXT) IS NULL
+    OR sm.class_id::TEXT = CAST(:class_id AS TEXT)
+)
         ORDER BY sm.subject_name
     """)
 
@@ -522,35 +527,44 @@ def get_consolidated_report(
             WHERE a.record_status = 'Active'
               AND r.record_status = 'Active'
               AND s.record_status = 'Active'
+AND (
+    CAST(:month AS INTEGER) IS NULL
+    OR EXTRACT(MONTH FROM a.assessment_date)
+       = CAST(:month AS INTEGER)
+)
 
-              AND (
-                  :month IS NULL
-                  OR EXTRACT(MONTH FROM a.assessment_date) = :month
-              )
-              AND (
-                  :year IS NULL
-                  OR EXTRACT(YEAR FROM a.assessment_date) = :year
-              )
-              AND (:class_id IS NULL OR s.class_id = :class_id)
-              AND (
-                  :section IS NULL
-                  OR TRIM(
-                      COALESCE(
-                          NULLIF(TRIM(s.section), ''),
-                          NULLIF(TRIM(c.section_name), ''),
-                          NULLIF(TRIM(a.section), ''),
-                          'Unknown'
-                      )
-                  ) = TRIM(:section)
-              )
-              AND (
-                  :subject IS NULL
-                  OR TRIM(a.subject) = TRIM(:subject)
-              )
-              AND (
-                  :assessment_id IS NULL
-                  OR a.assessment_id = :assessment_id
-              )
+AND (
+    CAST(:year AS INTEGER) IS NULL
+    OR EXTRACT(YEAR FROM a.assessment_date)
+       = CAST(:year AS INTEGER)
+)
+
+AND (
+    CAST(:class_id AS INTEGER) IS NULL
+    OR s.class_id = CAST(:class_id AS INTEGER)
+)
+
+AND (
+    CAST(:section AS TEXT) IS NULL
+    OR TRIM(
+        COALESCE(
+            NULLIF(TRIM(s.section), ''),
+            NULLIF(TRIM(c.section_name), ''),
+            NULLIF(TRIM(a.section), ''),
+            'Unknown'
+        )
+    ) = TRIM(CAST(:section AS TEXT))
+)
+
+AND (
+    CAST(:subject AS TEXT) IS NULL
+    OR TRIM(a.subject) = TRIM(CAST(:subject AS TEXT))
+)
+
+AND (
+    CAST(:assessment_id AS BIGINT) IS NULL
+    OR a.assessment_id = CAST(:assessment_id AS BIGINT)
+)
               AND (
                   :assessment_type = 'ALL'
                   OR (
@@ -604,15 +618,15 @@ def get_consolidated_report(
             WHERE s.record_status = 'Active'
               AND s.class_id = :class_id
               AND (
-                    :section IS NULL
-                    OR TRIM(
-                        COALESCE(
-                            NULLIF(TRIM(s.section), ''),
-                            NULLIF(TRIM(c.section_name), ''),
-                            'Unknown'
-                        )
-                    ) = TRIM(:section)
-              )
+    CAST(:section AS TEXT) IS NULL
+    OR TRIM(
+        COALESCE(
+            NULLIF(TRIM(s.section), ''),
+            NULLIF(TRIM(c.section_name), ''),
+            'Unknown'
+        )
+    ) = TRIM(CAST(:section AS TEXT))
+)
             ORDER BY
                 s.full_name,
                 s.student_id
