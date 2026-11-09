@@ -2,13 +2,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import axios from "axios";
 import TeachersSection from "@/components/TeachersSection";
-
-const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
-  timeout: 30000,
-});
+import { getCached } from "@/services/api";
 
 export default function TeachersPage() {
   const [teachers, setTeachers] = useState([]);
@@ -18,28 +13,23 @@ export default function TeachersPage() {
   // ==========================================
   // LOAD ALL ACTIVE TEACHERS
   // ==========================================
+
   useEffect(() => {
-    const controller = new AbortController();
+    let active = true;
 
     const loadTeachers = async () => {
       try {
-        setLoading(true);
         setError("");
 
-        const res = await api.get("/teachers/", {
-          signal: controller.signal,
-        });
+        const res = await getCached("/teachers/");
+
+        if (!active) return;
 
         setTeachers(
           Array.isArray(res.data) ? res.data : []
         );
       } catch (err) {
-        if (
-          controller.signal.aborted ||
-          axios.isCancel(err)
-        ) {
-          return;
-        }
+        if (!active) return;
 
         console.error("Teachers API Error:", {
           url: err.config?.url,
@@ -55,7 +45,7 @@ export default function TeachersPage() {
             "Unable to load teachers."
         );
       } finally {
-        if (!controller.signal.aborted) {
+        if (active) {
           setLoading(false);
         }
       }
@@ -64,15 +54,16 @@ export default function TeachersPage() {
     loadTeachers();
 
     return () => {
-      controller.abort();
+      active = false;
     };
   }, []);
 
   // ==========================================
   // FETCH TEACHERS BASED ON FILTERS
   // ==========================================
+
   const fetchTeachers = useCallback(
-    async (teacherType, subject = "", signal) => {
+    async (teacherType, subject = "") => {
       const params = {
         teacher_type: teacherType,
       };
@@ -81,9 +72,8 @@ export default function TeachersPage() {
         params.subject = subject;
       }
 
-      const res = await api.get("/teachers/", {
+      const res = await getCached("/teachers/", {
         params,
-        signal,
       });
 
       return Array.isArray(res.data) ? res.data : [];
@@ -93,12 +83,10 @@ export default function TeachersPage() {
 
   // ==========================================
   // FETCH ACTIVE SUBJECTS
-  // Called only when Subject filter is selected
   // ==========================================
-  const fetchSubjects = useCallback(async (signal) => {
-    const res = await api.get("/teachers/subjects", {
-      signal,
-    });
+
+  const fetchSubjects = useCallback(async () => {
+    const res = await getCached("/teachers/subjects");
 
     return Array.isArray(res.data) ? res.data : [];
   }, []);
@@ -106,13 +94,16 @@ export default function TeachersPage() {
   // ==========================================
   // FETCH TEACHER FILTER OPTIONS
   // ==========================================
-  const fetchTeacherFilters = useCallback(async (signal) => {
-    const res = await api.get("/teachers/filters", {
-      signal,
-    });
+
+  const fetchTeacherFilters = useCallback(async () => {
+    const res = await getCached("/teachers/filters");
 
     return Array.isArray(res.data) ? res.data : [];
   }, []);
+
+  // ==========================================
+  // RENDER
+  // ==========================================
 
   return (
     <TeachersSection

@@ -1,13 +1,9 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
 import StudentsSection from "@/components/StudentsSection";
-
-const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
-  timeout: 30000,
-});
+import { getCached } from "@/services/api";
 
 export default function StudentsPage() {
   const [students, setStudents] = useState([]);
@@ -15,30 +11,31 @@ export default function StudentsPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    let cancelled = false;
+    let active = true;
 
     const loadStudents = async () => {
       try {
-        setLoading(true);
         setError("");
 
-        const res = await api.get("/students/");
+        const response = await getCached("/students/");
 
-        if (!cancelled) {
-          setStudents(Array.isArray(res.data) ? res.data : []);
-        }
+        if (!active) return;
+
+        setStudents(
+          Array.isArray(response.data) ? response.data : []
+        );
       } catch (err) {
         console.error("Students API Error:", err);
 
-        if (!cancelled) {
-          setError(
-            err.response?.data?.detail ||
-              err.message ||
-              "Unable to load students."
-          );
-        }
+        if (!active) return;
+
+        setError(
+          err.response?.data?.detail ||
+            err.message ||
+            "Unable to load students."
+        );
       } finally {
-        if (!cancelled) {
+        if (active) {
           setLoading(false);
         }
       }
@@ -47,16 +44,15 @@ export default function StudentsPage() {
     loadStudents();
 
     return () => {
-      cancelled = true;
+      active = false;
     };
   }, []);
 
- 
-return (
-  <StudentsSection
-    students={students}
-    loaded={!loading}
-    error={error}
-  />
-);
+  return (
+    <StudentsSection
+      students={students}
+      loaded={!loading}
+      error={error}
+    />
+  );
 }

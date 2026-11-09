@@ -7,18 +7,16 @@ import {
   useEffect,
   useState,
 } from "react";
+
 import { useRouter } from "next/navigation";
 import axios from "axios";
+
+import { getCached } from "@/services/api";
 
 import useAuthGuard from "@/hooks/useAuthGuard";
 import Sidebar from "@/components/Sidebar";
 import Topbar from "@/components/Topbar";
 import AIToolsModal from "@/components/AIToolsModal";
-
-const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
-  timeout: 30000,
-});
 
 const HeadmasterContext = createContext(null);
 
@@ -26,32 +24,33 @@ export const useHeadmaster = () => {
   const context = useContext(HeadmasterContext);
 
   if (!context) {
-    throw new Error("useHeadmaster must be used inside HeadmasterShell");
+    throw new Error(
+      "useHeadmaster must be used inside HeadmasterShell"
+    );
   }
 
   return context;
 };
 
-// Detailed API error logging for debugging
+// ========================================
+// API ERROR LOGGING
+// ========================================
+
 function logApiError(label, error) {
   if (axios.isCancel(error)) return;
 
-  console.error(`[${label}] ACTUAL ERROR:`, error);
-
-  console.error(`[${label}] ERROR DETAILS:`, {
-    isAxiosError: axios.isAxiosError(error),
-    name: error?.name,
-    message: error?.message || String(error),
+  console.error(`[${label}] ERROR:`, {
+    message: error?.message,
     code: error?.code,
     url: error?.config?.url,
-    baseURL: error?.config?.baseURL,
-    method: error?.config?.method?.toUpperCase(),
-    timeout: error?.config?.timeout,
     status: error?.response?.status,
     response: error?.response?.data,
-    stack: error?.stack,
   });
 }
+
+// ========================================
+// HEADMASTER SHELL
+// ========================================
 
 export default function HeadmasterShell({ children }) {
   useAuthGuard();
@@ -73,20 +72,16 @@ export default function HeadmasterShell({ children }) {
   const [aiStudents, setAiStudents] = useState([]);
   const [aiStudentsLoaded, setAiStudentsLoaded] = useState(false);
 
-  // Load dashboard data
+  // ========================================
+  // LOAD DASHBOARD DATA
+  // ========================================
+
   useEffect(() => {
-    const controller = new AbortController();
     let active = true;
 
     const loadDashboard = async () => {
-      const startedAt = Date.now();
-
       try {
-        setDashboardLoading(true);
-
-        const res = await api.get("/dashboard/", {
-          signal: controller.signal,
-        });
+        const res = await getCached("/dashboard/");
 
         if (!active) return;
 
@@ -98,11 +93,9 @@ export default function HeadmasterShell({ children }) {
         setHeadmaster(data.headmaster || null);
         setUnreadCount(data.unread_count || 0);
       } catch (error) {
-        if (controller.signal.aborted || axios.isCancel(error)) {
-          return;
-        }
+        if (!active) return;
 
-        logApiError("Dashboard API Error", error, startedAt);
+        logApiError("Dashboard API", error);
       } finally {
         if (active) {
           setDashboardLoading(false);
@@ -114,38 +107,35 @@ export default function HeadmasterShell({ children }) {
 
     return () => {
       active = false;
-      controller.abort();
     };
   }, []);
 
-  // Load students only when AI Tools modal is opened
+  // ========================================
+  // LOAD STUDENTS FOR AI TOOLS
+  // USE SHARED API CACHE
+  // ========================================
+
   useEffect(() => {
     if (!openAI || aiStudentsLoaded) return;
 
-    const controller = new AbortController();
     let active = true;
 
     const loadStudentsForAI = async () => {
-      const startedAt = Date.now();
-
       try {
-        const res = await api.get("/students/", {
-          signal: controller.signal,
-        });
+        const res = await getCached("/students/");
 
         if (!active) return;
 
-        setAiStudents(
-          Array.isArray(res.data) ? res.data : []
-        );
+        const students = Array.isArray(res.data)
+          ? res.data
+          : [];
 
+        setAiStudents(students);
         setAiStudentsLoaded(true);
       } catch (error) {
-        if (controller.signal.aborted || axios.isCancel(error)) {
-          return;
-        }
+        if (!active) return;
 
-        logApiError("AI Tools Students API Error", error, startedAt);
+        logApiError("AI Tools Students API", error);
       }
     };
 
@@ -153,9 +143,12 @@ export default function HeadmasterShell({ children }) {
 
     return () => {
       active = false;
-      controller.abort();
     };
   }, [openAI, aiStudentsLoaded]);
+
+  // ========================================
+  // CONTEXT
+  // ========================================
 
   const contextValue = {
     dashboardSummary,
@@ -167,20 +160,28 @@ export default function HeadmasterShell({ children }) {
     setUnreadCount,
   };
 
+  // ========================================
+  // RENDER
+  // ========================================
+
   return (
     <HeadmasterContext.Provider value={contextValue}>
       <div className="layout">
+
         <Sidebar
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
         />
 
         <div className="main-content">
+
           <Topbar
             headmaster={headmaster}
             notificationCount={unreadCount}
             onOpenAI={() => setOpenAI(true)}
-            onOpenNotifications={() => router.push("/notifications")}
+            onOpenNotifications={() =>
+              router.push("/notifications")
+            }
             sidebarOpen={sidebarOpen}
             setSidebarOpen={setSidebarOpen}
           />
@@ -193,6 +194,7 @@ export default function HeadmasterShell({ children }) {
           />
 
           {children}
+
         </div>
       </div>
     </HeadmasterContext.Provider>

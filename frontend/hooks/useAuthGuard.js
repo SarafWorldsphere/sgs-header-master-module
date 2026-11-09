@@ -10,8 +10,8 @@ export default function useAuthGuard() {
     const token = localStorage.getItem("token");
     const ssoRole = sessionStorage.getItem("userRole");
 
-    //if (!token && ssoRole !== "Headmaster") {
-    //window.location.href = process.env.NEXT_PUBLIC_LOGOUT_URL;
-    //}
+    if (!token && ssoRole !== "Headmaster") {
+    window.location.href = process.env.NEXT_PUBLIC_LOGOUT_URL;
+    }
   }, []);
 }

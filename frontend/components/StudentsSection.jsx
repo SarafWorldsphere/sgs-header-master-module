@@ -1,7 +1,9 @@
+
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { getCached } from "@/services/api";
 
 export default function StudentsSection({
   students = [],
@@ -28,15 +30,11 @@ export default function StudentsSection({
       try {
         setClassesLoading(true);
 
-        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-        const response = await fetch(`${apiBaseUrl}/students/classes`);
+        const response = await getCached("/students/classes");
 
-        if (!response.ok) {
-          throw new Error(`Failed to load classes: ${response.status}`);
-        }
-
-        const data = await response.json();
-        setClassMaster(Array.isArray(data) ? data : []);
+        setClassMaster(
+          Array.isArray(response.data) ? response.data : []
+        );
       } catch (error) {
         console.error("Error loading class master:", error);
         setClassMaster([]);
@@ -56,7 +54,9 @@ export default function StudentsSection({
           .map((item) => item.class_name?.trim())
           .filter(Boolean)
       ),
-    ].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    ].sort((a, b) =>
+      a.localeCompare(b, undefined, { numeric: true })
+    );
   }, [classMaster]);
 
   // ===================== SECTION OPTIONS =====================
@@ -72,7 +72,9 @@ export default function StudentsSection({
           .map((item) => item.section_name?.trim())
           .filter(Boolean)
       ),
-    ].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    ].sort((a, b) =>
+      a.localeCompare(b, undefined, { numeric: true })
+    );
   }, [classMaster, selectedClass]);
 
   // ===================== FETCH FILTERED STUDENTS FROM BACKEND =====================
@@ -89,29 +91,24 @@ export default function StudentsSection({
       try {
         setStudentsLoading(true);
 
-        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-        const params = new URLSearchParams();
+        const params = {};
 
         if (selectedClass) {
-          params.set("class_name", selectedClass);
+          params.class_name = selectedClass;
         }
 
         if (selectedSection) {
-          params.set("section", selectedSection);
+          params.section = selectedSection;
         }
 
-        const response = await fetch(
-          `${apiBaseUrl}/students/?${params.toString()}`
-        );
-
-        if (!response.ok) {
-          throw new Error(`Students API failed: ${response.status}`);
-        }
-
-        const data = await response.json();
+        const response = await getCached("/students/", {
+          params,
+        });
 
         if (!cancelled) {
-          setFilteredApiStudents(Array.isArray(data) ? data : []);
+          setFilteredApiStudents(
+            Array.isArray(response.data) ? response.data : []
+          );
         }
       } catch (error) {
         console.error("Filtered Students API Error:", error);
@@ -155,33 +152,12 @@ export default function StudentsSection({
       setSelectedStudent(null);
       setShowView(true);
 
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-
-      console.log("API BASE URL:", apiBaseUrl);
-
-      const url = `${apiBaseUrl}/students/${studentId}`;
-
-      console.log("VIEW API URL:", url);
-
-      const response = await fetch(url);
+      const response = await getCached(`/students/${studentId}`);
 
       console.log("VIEW API STATUS:", response.status);
+      console.log("VIEW API DATA:", response.data);
 
-      if (!response.ok) {
-        const errorText = await response.text();
-
-        console.error("VIEW API ERROR RESPONSE:", errorText);
-
-        throw new Error(
-          `Failed to fetch student details: ${response.status}`
-        );
-      }
-
-      const data = await response.json();
-
-      console.log("VIEW API DATA:", data);
-
-      setSelectedStudent(data);
+      setSelectedStudent(response.data);
     } catch (error) {
       console.error("Student details error:", error);
 
@@ -268,7 +244,7 @@ export default function StudentsSection({
             </select>
           </div>
 
-          {/* STUDENT SEARCH */}
+          {/* STUDENT SEARCH - ORIGINAL UI PRESERVED */}
           <div className="student-search">
             <label htmlFor="student-search-input">Search</label>
 
