@@ -1,7 +1,9 @@
+
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { getCached } from "@/services/api";
 
 export default function StudentsSection({
   students = [],
@@ -10,135 +12,137 @@ export default function StudentsSection({
 }) {
   const [selectedClass, setSelectedClass] = useState("");
   const [selectedSection, setSelectedSection] = useState("");
-const [classMaster, setClassMaster] = useState([]);
-const [classesLoading, setClassesLoading] = useState(false);
+  const [studentSearch, setStudentSearch] = useState(searchText);
 
-const [filteredApiStudents, setFilteredApiStudents] = useState(students);
-const [studentsLoading, setStudentsLoading] = useState(false);
+  const [classMaster, setClassMaster] = useState([]);
+  const [classesLoading, setClassesLoading] = useState(false);
+
+  const [filteredApiStudents, setFilteredApiStudents] = useState(students);
+  const [studentsLoading, setStudentsLoading] = useState(false);
 
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [showView, setShowView] = useState(false);
   const [viewLoading, setViewLoading] = useState(false);
-// ===================== LOAD CLASS MASTER =====================
-useEffect(() => {
-  const fetchClasses = async () => {
-    try {
-      setClassesLoading(true);
 
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+  // ===================== LOAD CLASS MASTER =====================
+  useEffect(() => {
+    const fetchClasses = async () => {
+      try {
+        setClassesLoading(true);
 
-      const response = await fetch(`${apiBaseUrl}/students/classes`);
+        const response = await getCached("/students/classes");
 
-      if (!response.ok) {
-        throw new Error(`Failed to load classes: ${response.status}`);
+        setClassMaster(
+          Array.isArray(response.data) ? response.data : []
+        );
+      } catch (error) {
+        console.error("Error loading class master:", error);
+        setClassMaster([]);
+      } finally {
+        setClassesLoading(false);
+      }
+    };
+
+    fetchClasses();
+  }, []);
+
+  // ===================== CLASS OPTIONS =====================
+  const classOptions = useMemo(() => {
+    return [
+      ...new Set(
+        classMaster
+          .map((item) => item.class_name?.trim())
+          .filter(Boolean)
+      ),
+    ].sort((a, b) =>
+      a.localeCompare(b, undefined, { numeric: true })
+    );
+  }, [classMaster]);
+
+  // ===================== SECTION OPTIONS =====================
+  const sectionOptions = useMemo(() => {
+    return [
+      ...new Set(
+        classMaster
+          .filter(
+            (item) =>
+              !selectedClass ||
+              item.class_name?.trim() === selectedClass
+          )
+          .map((item) => item.section_name?.trim())
+          .filter(Boolean)
+      ),
+    ].sort((a, b) =>
+      a.localeCompare(b, undefined, { numeric: true })
+    );
+  }, [classMaster, selectedClass]);
+
+  // ===================== FETCH FILTERED STUDENTS FROM BACKEND =====================
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchFilteredStudents = async () => {
+      // No filters: use the students already loaded by page.js
+      if (!selectedClass && !selectedSection) {
+        setFilteredApiStudents(students);
+        return;
       }
 
-      const data = await response.json();
-      setClassMaster(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error("Error loading class master:", error);
-      setClassMaster([]);
-    } finally {
-      setClassesLoading(false);
-    }
-  };
+      try {
+        setStudentsLoading(true);
 
-  fetchClasses();
-}, []);
+        const params = {};
 
-// ===================== CLASS OPTIONS =====================
-const classOptions = useMemo(() => {
-  return [
-    ...new Set(
-      classMaster
-        .map((item) => item.class_name?.trim())
-        .filter(Boolean)
-    ),
-  ].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
-}, [classMaster]);
- // ===================== SECTION OPTIONS =====================
-const sectionOptions = useMemo(() => {
-  return [
-    ...new Set(
-      classMaster
-        .filter(
-          (item) =>
-            !selectedClass ||
-            item.class_name?.trim() === selectedClass
-        )
-        .map((item) => item.section_name?.trim())
-        .filter(Boolean)
-    ),
-  ].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
-}, [classMaster, selectedClass]);
-// ===================== FETCH FILTERED STUDENTS FROM BACKEND =====================
-useEffect(() => {
-  let cancelled = false;
+        if (selectedClass) {
+          params.class_name = selectedClass;
+        }
 
-  const fetchFilteredStudents = async () => {
-    // No filters: use the students already loaded by page.js
-    if (!selectedClass && !selectedSection) {
-      setFilteredApiStudents(students);
-      return;
-    }
+        if (selectedSection) {
+          params.section = selectedSection;
+        }
 
-    try {
-      setStudentsLoading(true);
+        const response = await getCached("/students/", {
+          params,
+        });
 
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-      const params = new URLSearchParams();
-
-      if (selectedClass) {
-        params.set("class_name", selectedClass);
+        if (!cancelled) {
+          setFilteredApiStudents(
+            Array.isArray(response.data) ? response.data : []
+          );
+        }
+      } catch (error) {
+        console.error("Filtered Students API Error:", error);
+      } finally {
+        if (!cancelled) {
+          setStudentsLoading(false);
+        }
       }
+    };
 
-      if (selectedSection) {
-        params.set("section", selectedSection);
-      }
+    fetchFilteredStudents();
 
-      const response = await fetch(
-        `${apiBaseUrl}/students/?${params.toString()}`
-      );
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedClass, selectedSection, students]);
 
-      if (!response.ok) {
-        throw new Error(`Students API failed: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      if (!cancelled) {
-        setFilteredApiStudents(Array.isArray(data) ? data : []);
-      }
-    } catch (error) {
-      console.error("Filtered Students API Error:", error);
-    } finally {
-      if (!cancelled) {
-        setStudentsLoading(false);
-      }
-    }
-  };
-
-  fetchFilteredStudents();
-
-  return () => {
-    cancelled = true;
-  };
-}, [selectedClass, selectedSection, students]);
   // ===================== FILTER STUDENTS =====================
-const filteredStudents = useMemo(() => {
-  const search = searchText.trim().toLowerCase();
+  const filteredStudents = useMemo(() => {
+    const search = studentSearch.trim().toLowerCase();
 
-  return filteredApiStudents.filter((student) => {
-    const matchesSearch =
-      !search ||
-      student.full_name?.toLowerCase().includes(search) ||
-      student.admission_no?.toLowerCase().includes(search) ||
-      student.class_name?.toLowerCase().includes(search) ||
-      student.section_name?.toLowerCase().includes(search);
+    return filteredApiStudents.filter((student) => {
+      const matchesSearch =
+        !search ||
+        student.full_name?.toLowerCase().includes(search) ||
+        student.admission_no?.toLowerCase().includes(search) ||
+        student.class_name?.toLowerCase().includes(search) ||
+        student.section_name?.toLowerCase().includes(search) ||
+        String(student.roll_no || "").toLowerCase().includes(search);
 
-    return matchesSearch;
-  });
-}, [filteredApiStudents, searchText]);
+      return matchesSearch;
+    });
+  }, [filteredApiStudents, studentSearch]);
+
   // ===================== VIEW STUDENT =====================
   const handleViewStudent = async (studentId) => {
     console.log("VIEW CLICKED:", studentId);
@@ -148,45 +152,14 @@ const filteredStudents = useMemo(() => {
       setSelectedStudent(null);
       setShowView(true);
 
-      const apiBaseUrl =
-        process.env.NEXT_PUBLIC_API_BASE_URL;
+      const response = await getCached(`/students/${studentId}`);
 
-      console.log("API BASE URL:", apiBaseUrl);
+      console.log("VIEW API STATUS:", response.status);
+      console.log("VIEW API DATA:", response.data);
 
-      const url = `${apiBaseUrl}/students/${studentId}`;
-
-      console.log("VIEW API URL:", url);
-
-      const response = await fetch(url);
-
-      console.log(
-        "VIEW API STATUS:",
-        response.status
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-
-        console.error(
-          "VIEW API ERROR RESPONSE:",
-          errorText
-        );
-
-        throw new Error(
-          `Failed to fetch student details: ${response.status}`
-        );
-      }
-
-      const data = await response.json();
-
-      console.log("VIEW API DATA:", data);
-
-      setSelectedStudent(data);
+      setSelectedStudent(response.data);
     } catch (error) {
-      console.error(
-        "Student details error:",
-        error
-      );
+      console.error("Student details error:", error);
 
       setShowView(false);
       setSelectedStudent(null);
@@ -206,14 +179,12 @@ const filteredStudents = useMemo(() => {
   // ===================== PARENT DATA =====================
   const parentRecords =
     selectedStudent?.parents?.filter(
-      (parent) =>
-        parent.relationship_type === "parent"
+      (parent) => parent.relationship_type === "parent"
     ) || [];
 
   const guardian =
     selectedStudent?.parents?.find(
-      (parent) =>
-        parent.relationship_type === "guardian"
+      (parent) => parent.relationship_type === "guardian"
     ) || null;
 
   return (
@@ -225,11 +196,10 @@ const filteredStudents = useMemo(() => {
       {/* ================= MODERN FILTER TOOLBAR ================= */}
       <div className="students-toolbar">
         <div className="students-toolbar-left">
+
           {/* CLASS FILTER */}
           <div className="student-filter">
-            <label htmlFor="student-class-filter">
-              Class
-            </label>
+            <label htmlFor="student-class-filter">Class</label>
 
             <select
               id="student-class-filter"
@@ -242,14 +212,11 @@ const filteredStudents = useMemo(() => {
               }}
             >
               <option value="">
-  {classesLoading ? "Loading Classes..." : "All Classes"}
-</option>
+                {classesLoading ? "Loading Classes..." : "All Classes"}
+              </option>
 
               {classOptions.map((className) => (
-                <option
-                  key={className}
-                  value={className}
-                >
+                <option key={className} value={className}>
                   {className}
                 </option>
               ))}
@@ -258,9 +225,7 @@ const filteredStudents = useMemo(() => {
 
           {/* SECTION FILTER */}
           <div className="student-filter">
-            <label htmlFor="student-section-filter">
-              Section
-            </label>
+            <label htmlFor="student-section-filter">Section</label>
 
             <select
               id="student-section-filter"
@@ -269,29 +234,38 @@ const filteredStudents = useMemo(() => {
                 setSelectedSection(e.target.value);
               }}
             >
-              <option value="">
-                All Sections
-              </option>
+              <option value="">All Sections</option>
 
               {sectionOptions.map((section) => (
-                <option
-                  key={section}
-                  value={section}
-                >
+                <option key={section} value={section}>
                   Section {section}
                 </option>
               ))}
             </select>
           </div>
 
+          {/* STUDENT SEARCH - ORIGINAL UI PRESERVED */}
+          <div className="student-search">
+            <label htmlFor="student-search-input">Search</label>
+
+            <input
+              id="student-search-input"
+              type="search"
+              placeholder="Search name or admission number..."
+              value={studentSearch}
+              onChange={(e) => setStudentSearch(e.target.value)}
+            />
+          </div>
+
           {/* RESET BUTTON */}
-          {(selectedClass || selectedSection) && (
+          {(selectedClass || selectedSection || studentSearch) && (
             <button
               type="button"
               className="clear-filter-btn"
               onClick={() => {
                 setSelectedClass("");
                 setSelectedSection("");
+                setStudentSearch("");
               }}
               aria-label="Reset student filters"
             >
@@ -305,10 +279,9 @@ const filteredStudents = useMemo(() => {
           <span className="count-number">
             {filteredStudents.length}
           </span>
+
           <span>
-            {filteredStudents.length === 1
-              ? "Student"
-              : "Students"}
+            {filteredStudents.length === 1 ? "Student" : "Students"}
           </span>
         </div>
       </div>
@@ -330,47 +303,27 @@ const filteredStudents = useMemo(() => {
           <tbody>
             {!loaded || studentsLoading ? (
               <tr>
-                <td colSpan="6">
-                  Loading...
-                </td>
+                <td colSpan="6">Loading...</td>
               </tr>
             ) : filteredStudents.length === 0 ? (
               <tr>
-                <td colSpan="6">
-                  No students found
-                </td>
+                <td colSpan="6">No students found</td>
               </tr>
             ) : (
               filteredStudents.map((student) => (
                 <tr key={student.student_id}>
-                  <td>
-                    {student.admission_no || "-"}
-                  </td>
-
-                  <td>
-                    {student.full_name || "-"}
-                  </td>
-
-                  <td>
-                    {student.class_name || "-"}
-                  </td>
-
-                  <td>
-                    {student.section_name || "-"}
-                  </td>
-
-                  <td>
-                    {student.roll_no || "-"}
-                  </td>
+                  <td>{student.admission_no || "-"}</td>
+                  <td>{student.full_name || "-"}</td>
+                  <td>{student.class_name || "-"}</td>
+                  <td>{student.section_name || "-"}</td>
+                  <td>{student.roll_no || "-"}</td>
 
                   <td>
                     <button
                       type="button"
                       className="student-view-btn"
                       onClick={() =>
-                        handleViewStudent(
-                          student.student_id
-                        )
+                        handleViewStudent(student.student_id)
                       }
                     >
                       View
@@ -390,9 +343,7 @@ const filteredStudents = useMemo(() => {
           <div
             className="student-view-overlay"
             onClick={(e) => {
-              if (
-                e.target === e.currentTarget
-              ) {
+              if (e.target === e.currentTarget) {
                 closeStudentView();
               }
             }}
@@ -422,56 +373,41 @@ const filteredStudents = useMemo(() => {
                 <>
                   {/* STUDENT INFORMATION */}
                   <div className="student-basic-details">
-                    <h3>
-                      Student Information
-                    </h3>
+                    <h3>Student Information</h3>
 
                     <p>
-                      <strong>
-                        Admission No:
-                      </strong>{" "}
-                      {selectedStudent.student
-                        ?.admission_no || "-"}
+                      <strong>Admission No:</strong>{" "}
+                      {selectedStudent.student?.admission_no || "-"}
                     </p>
 
                     <p>
                       <strong>Name:</strong>{" "}
-                      {selectedStudent.student
-                        ?.full_name || "-"}
+                      {selectedStudent.student?.full_name || "-"}
                     </p>
 
                     <p>
                       <strong>Class:</strong>{" "}
-                      {selectedStudent.student
-                        ?.class_name || "-"}
+                      {selectedStudent.student?.class_name || "-"}
                     </p>
 
                     <p>
                       <strong>Section:</strong>{" "}
-                      {selectedStudent.student
-                        ?.section_name || "-"}
+                      {selectedStudent.student?.section_name || "-"}
                     </p>
 
                     <p>
                       <strong>Roll No:</strong>{" "}
-                      {selectedStudent.student
-                        ?.roll_no || "-"}
+                      {selectedStudent.student?.roll_no || "-"}
                     </p>
 
                     <p>
-                      <strong>
-                        Student Phone:
-                      </strong>{" "}
-                      {selectedStudent.student
-                        ?.student_phone || "-"}
+                      <strong>Student Phone:</strong>{" "}
+                      {selectedStudent.student?.student_phone || "-"}
                     </p>
 
                     <p>
-                      <strong>
-                        Student Email:
-                      </strong>{" "}
-                      {selectedStudent.student
-                        ?.email_id || "-"}
+                      <strong>Student Email:</strong>{" "}
+                      {selectedStudent.student?.email_id || "-"}
                     </p>
                   </div>
 
@@ -483,20 +419,17 @@ const filteredStudents = useMemo(() => {
                       <>
                         <p>
                           <strong>Name:</strong>{" "}
-                          {parentRecords[0]
-                            .full_name || "-"}
+                          {parentRecords[0].full_name || "-"}
                         </p>
 
                         <p>
                           <strong>Phone:</strong>{" "}
-                          {parentRecords[0].phone ||
-                            "-"}
+                          {parentRecords[0].phone || "-"}
                         </p>
 
                         <p>
                           <strong>Email:</strong>{" "}
-                          {parentRecords[0].email ||
-                            "-"}
+                          {parentRecords[0].email || "-"}
                         </p>
                       </>
                     ) : (
@@ -512,20 +445,17 @@ const filteredStudents = useMemo(() => {
                       <>
                         <p>
                           <strong>Name:</strong>{" "}
-                          {parentRecords[1]
-                            .full_name || "-"}
+                          {parentRecords[1].full_name || "-"}
                         </p>
 
                         <p>
                           <strong>Phone:</strong>{" "}
-                          {parentRecords[1].phone ||
-                            "-"}
+                          {parentRecords[1].phone || "-"}
                         </p>
 
                         <p>
                           <strong>Email:</strong>{" "}
-                          {parentRecords[1].email ||
-                            "-"}
+                          {parentRecords[1].email || "-"}
                         </p>
                       </>
                     ) : (
@@ -541,8 +471,7 @@ const filteredStudents = useMemo(() => {
                       <>
                         <p>
                           <strong>Name:</strong>{" "}
-                          {guardian.full_name ||
-                            "-"}
+                          {guardian.full_name || "-"}
                         </p>
 
                         <p>

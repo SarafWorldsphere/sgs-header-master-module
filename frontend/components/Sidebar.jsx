@@ -1,127 +1,132 @@
-﻿import { useState } from "react";
-import { useRouter } from "next/navigation";
+﻿"use client";
+
+import { useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import {
   Home,
   Users,
   GraduationCap,
-  FileText ,
-  TrendingUp,
+  FileText,
   Bell,
   CalendarDays,
-  MapPinned,
-  UserCheck,
   LogOut,
   Activity,
+  X,
 } from "lucide-react";
-import Image from "next/image";
-import LogoutModal from "@/components/LogoutModal";
-export default function Sidebar({
-  activeTab,
-  setActiveTab,
-  isOpen,
-  onClose,
-}) {
-  const router = useRouter();
 
-  // âœ… ADD STATE FOR MODAL
+import LogoutModal from "@/components/LogoutModal";
+import styles from "./Sidebar.module.css";
+
+const menuItems = [
+  { label: "Dashboard", path: "/", icon: Home },
+  { label: "Students", path: "/students", icon: Users },
+  { label: "Teachers", path: "/teachers", icon: GraduationCap },
+  { label: "Reports", path: "/reports", icon: FileText },
+  { label: "Notifications", path: "/notifications", icon: Bell },
+  { label: "School Events", path: "/school-events", icon: CalendarDays },
+  {
+    label: "Platform Activity",
+    path: "/platform-activity",
+    icon: Activity,
+  },
+];
+
+export default function Sidebar({ isOpen, onClose }) {
+  const router = useRouter();
+  const pathname = usePathname();
+
   const [showLogout, setShowLogout] = useState(false);
 
-  const menuItems = [
-    { id: "dashboard", label: "Dashboard", icon: Home },
-    { id: "students", label: "Students", icon: Users },
-    { id: "teachers", label: "Teachers", icon: GraduationCap },
-    { id: "reports", label: "Reports", icon: FileText },
-    { id: "progress", label: "Progress", icon: TrendingUp },
-    { id: "notifications", label: "Notifications", icon: Bell },
-    { id: "functions", label: "Functions", icon: CalendarDays },
-    { id: "tours", label: "Tours", icon: MapPinned },
-    { id: "classTeachers", label: "Class Teachers", icon: UserCheck },
-    { id: "platformActivity", label: "Platform Activity", icon: Activity },
+  const activePath = pathname?.replace(/^\/headmaster(?=\/|$)/, "") || "/";
 
-    // logout item stays same
-    { id: "logout", label: "Logout", icon: LogOut, danger: true },
-  ];
+  const handleNavigation = (path) => {
+    router.push(path);
 
-  // âœ… LOGOUT LOGIC
+    if (window.innerWidth <= 900) {
+      onClose?.();
+    }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("role");
     sessionStorage.clear();
 
-    // clear cookie (if used)
     document.cookie =
       "sgs_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC";
 
     window.location.href = process.env.NEXT_PUBLIC_LOGOUT_URL;
   };
 
-  const handleClick = (item) => {
-    if (item.id === "logout") {
-      setShowLogout(true); // âœ… open modal instead of confirm
-      return;
-    }
-
-   if (item.id === "platformActivity") {
-     router.push("/platform-activity");
-     if (window.innerWidth <= 900) onClose();
-     return;
-   }
-   setActiveTab(item.id);
-
-if (window.innerWidth <= 900) {
-  onClose();
-}
-  };
-
   return (
     <>
-      <div className={`sidebar ${isOpen ? "open" : ""}`}>
-        <div>
-          {/* BRAND */}
-        <div className="brand-box">
-  <div className="logo-circle">
-    <img
-      src="/headmaster/school-logo.jpeg"
-      alt="SGS Logo"
-      width={80}
-      height={80}
-      className="school-logo"
-    />
-  </div>
+      <aside className={`${styles.sidebar} ${isOpen ? styles.open : ""}`}>
+      <button
+  type="button"
+  className={styles.closeButton}
+  onClick={onClose}
+  aria-label="Close sidebar"
+>
+  <X size={23} />
+</button>
+        <div className={styles.sidebarContent}>
+          <div className={styles.brand}>
+            <div className={styles.logoCircle}>
+              <img
+                src="/headmaster/school-logo.jpeg"
+                alt="SGS School Logo"
+              />
+            </div>
 
-  <h2>SGS SCHOOL</h2>
-  <p>Headmaster Dashboard</p>
-</div>
+            <h2>SGS SCHOOL</h2>
+            <p>Headmaster Dashboard</p>
+          </div>
 
-          {/* MENU */}
-          <div className="menu-list">
+          <nav className={styles.menuList}>
             {menuItems.map((item) => {
               const Icon = item.icon;
+              const isActive =
+                item.path === "/"
+                  ? activePath === "/"
+                  : activePath === item.path ||
+                    activePath.startsWith(`${item.path}/`);
 
               return (
                 <button
-                  key={item.id}
-                  className={`menu-btn ${
-                    activeTab === item.id ? "active" : ""
-                  } ${item.danger ? "logout-style" : ""}`}
-                  onClick={() => handleClick(item)}
+                  key={item.path}
+                  type="button"
+                  className={`${styles.menuButton} ${
+                    isActive ? styles.active : ""
+                  }`}
+                  onClick={() => handleNavigation(item.path)}
                 >
                   <Icon size={18} />
-                  {item.label}
+                  <span>{item.label}</span>
                 </button>
               );
             })}
-          </div>
-        </div>
-      </div>
-      {isOpen && (
-  <div
-    className="sidebar-overlay"
-    onClick={onClose}
-  />
-)}
 
-      {/* âœ… LOGOUT MODAL (ADD HERE - OUTSIDE SIDEBAR DIV) */}
+            <button
+              type="button"
+              className={`${styles.menuButton} ${styles.logout}`}
+              onClick={() => setShowLogout(true)}
+            >
+              <LogOut size={18} />
+              <span>Logout</span>
+            </button>
+          </nav>
+        </div>
+      </aside>
+
+      {isOpen && (
+        <button
+          type="button"
+          className={styles.overlay}
+          onClick={onClose}
+          aria-label="Close sidebar"
+        />
+      )}
+
       <LogoutModal
         open={showLogout}
         onCancel={() => setShowLogout(false)}
@@ -130,5 +135,3 @@ if (window.innerWidth <= 900) {
     </>
   );
 }
-
-

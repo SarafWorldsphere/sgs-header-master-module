@@ -9,8 +9,7 @@ import {
   Menu, X
 } from "lucide-react";
 import styles from "./page.module.css";
-import Sidebar from "@/components/Sidebar";
-import { useRouter } from "next/navigation";
+
 
 const platformActivityRequestQueue = (() => {
   const pending = [];
@@ -84,20 +83,7 @@ const getRows = (data, key) =>
   Array.isArray(data?.[key]) ? data[key] : [];
 
 export default function PlatformActivityPage() {
-  const router = useRouter();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const media = window.matchMedia("(max-width: 650px)");
-
-    const updateViewport = () => setIsMobile(media.matches);
-
-    updateViewport();
-    media.addEventListener("change", updateViewport);
-
-    return () => media.removeEventListener("change", updateViewport);
-  }, []);
+ 
   const [activeSection, setActiveSection] = useState("active");
   const [summary, setSummary] = useState({});
   const [roleStats, setRoleStats] = useState([]);
@@ -325,38 +311,9 @@ export default function PlatformActivityPage() {
       }, {})
   ).sort((a, b) => b.total_views - a.total_views);
 
-  return (
-    <div className={styles.platformLayout}>
-      <Sidebar
-        activeTab="platformActivity"
-        setActiveTab={(tab) => router.push("/")}
-        isOpen={!isMobile || sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-      />
-      <div className={styles.platformMain}>
-        <main className={styles.page}>
-          {isMobile && (
-            <>
-              <button
-                type="button"
-                className={styles.mobileMenuButton}
-                onClick={() => setSidebarOpen((open) => !open)}
-                aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
-                aria-expanded={sidebarOpen}
-              >
-                {sidebarOpen ? <X size={22} /> : <Menu size={22} />}
-              </button>
-
-              {sidebarOpen && (
-                <button
-                  type="button"
-                  className={styles.sidebarBackdrop}
-                  onClick={() => setSidebarOpen(false)}
-                  aria-label="Close navigation"
-                />
-              )}
-            </>
-          )}
+ return (
+  <main className={styles.page}>
+       
       <header className={styles.header}>
         <div className={styles.heading}>
           <div className={styles.eyebrow}><Activity size={15} /> PLATFORM ANALYTICS</div>
@@ -739,8 +696,7 @@ export default function PlatformActivityPage() {
         <span>Platform Activity ï¿½ Live API data</span>
       </footer>
         </main>
-      </div>
-    </div>
+     
   );
 }
 
