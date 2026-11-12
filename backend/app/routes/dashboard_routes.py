@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 
+from app.auth import require_headmaster
 from app.database import get_db
 
 router = APIRouter()
@@ -134,9 +135,10 @@ headmaster AS (
     JOIN sgs_role_response r
         ON r.role_id = u.role_id
 
-    WHERE LOWER(r.role_name) = 'headmaster'
+    WHERE LOWER(BTRIM(r.role_name)) = 'headmaster'
       AND u.is_active = TRUE
-      AND u.record_status = 'Active'
+      AND LOWER(BTRIM(u.record_status)) = 'active'
+      AND u.user_id = :user_id
 
     LIMIT 1
 ),
@@ -168,8 +170,10 @@ SELECT
 # =====================================================
 
 @router.get("/")
-def dashboard_core(db: Session = Depends(get_db)):
-
+def dashboard_core(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_headmaster)
+):
     started_at = perf_counter()
 
     print("\n[DASHBOARD] ROUTE ENTERED", flush=True)
@@ -202,7 +206,10 @@ def dashboard_core(db: Session = Depends(get_db)):
         print("[DASHBOARD] BEFORE SQL QUERY", flush=True)
 
         result = (
-            db.execute(text(DASHBOARD_QUERY))
+            db.execute(
+                text(DASHBOARD_QUERY),
+                {"user_id": int(current_user["user_id"])}
+            )
             .mappings()
             .fetchone()
         )

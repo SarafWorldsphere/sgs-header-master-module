@@ -2,15 +2,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
+import api from "@/services/api";
 
 import FunctionsSection from "@/components/FunctionsSection";
 import ToursSection from "@/components/ToursSection";
 
-const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
-  timeout: 30000,
-});
+
 
 export default function SchoolEventsPage() {
   const [activeEventTab, setActiveEventTab] = useState("functions");

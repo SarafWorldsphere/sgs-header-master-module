@@ -12,6 +12,22 @@ const api = axios.create({
   timeout: 30000,
 });
 
+// JWT Authorization Header
+api.interceptors.request.use(
+  (config) => {
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("token");
+
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    }
+
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
 // Cache remains in memory until logout or browser refresh.
 const responseCache = new Map();
 const inFlightRequests = new Map();
@@ -97,5 +113,32 @@ export const clearApiCache = () => {
   inFlightRequests.clear();
 };
 
+let isRedirectingToLogin = false;
+
+// JWT Expiry / Unauthorized Response Handling
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (
+      error.response?.status === 401 &&
+      typeof window !== "undefined" &&
+      !isRedirectingToLogin
+    ) {
+      isRedirectingToLogin = true;
+
+      localStorage.removeItem("token");
+      localStorage.removeItem("role");
+      sessionStorage.clear();
+
+      clearApiCache();
+
+      window.location.replace(
+        process.env.NEXT_PUBLIC_LOGOUT_URL || "http://localhost:3000"
+      );
+    }
+
+    return Promise.reject(error);
+  }
+);
 
 export default api;

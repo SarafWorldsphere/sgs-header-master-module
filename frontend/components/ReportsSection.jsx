@@ -3,7 +3,8 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 
-import axios from "axios";
+import api from "@/services/api";
+
 import {
   FileText,
   ChartNoAxesCombined,
@@ -15,10 +16,6 @@ import {
   School,
 } from "lucide-react";
 
-const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
-  timeout: 30000,
-});
 
 // ===================== SHARED GET REQUEST HANDLER =====================
 // Reuse an identical GET request while it is still in progress.
