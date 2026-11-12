@@ -4,7 +4,7 @@ import "./AIToolsModal.css";
 import AcademicAnalytics from "./AcademicAnalytics";
 import ReportPanel from "./ReportPanel";
 import { useState, useEffect } from "react";
-import axios from "axios";
+import api from "@/services/api";
 
 import {
   ResponsiveContainer,
@@ -27,9 +27,6 @@ const COLORS = [
   "#06B6D4",
 ];
 
-const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
-});
 
 export default function AIToolsModal({
   open,

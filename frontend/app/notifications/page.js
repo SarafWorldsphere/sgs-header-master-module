@@ -2,14 +2,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
+import api from "@/services/api";
 import NotificationsSection from "@/components/NotificationsSection";
 import { useHeadmaster } from "@/components/HeadmasterShell";
-
-const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
-  timeout: 30000,
-});
 
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState([]);
@@ -44,7 +39,6 @@ export default function NotificationsPage() {
         } catch (markError) {
           console.error("Mark Notifications Read Error:", markError);
         }
-
       } catch (err) {
         console.error("Notifications API Error:", err);
 

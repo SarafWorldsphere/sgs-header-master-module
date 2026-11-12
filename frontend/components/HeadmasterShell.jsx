@@ -53,7 +53,7 @@ function logApiError(label, error) {
 // ========================================
 
 export default function HeadmasterShell({ children }) {
-  useAuthGuard();
+  const isAuthenticated = useAuthGuard();
 
   const router = useRouter();
 
@@ -164,6 +164,9 @@ export default function HeadmasterShell({ children }) {
   // RENDER
   // ========================================
 
+  if (!isAuthenticated) {
+    return null;
+  }
   return (
     <HeadmasterContext.Provider value={contextValue}>
       <div className="layout">

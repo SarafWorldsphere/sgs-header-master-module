@@ -16,6 +16,7 @@ import {
 
 import LogoutModal from "@/components/LogoutModal";
 import styles from "./Sidebar.module.css";
+import { clearApiCache } from "@/services/api";
 
 const menuItems = [
   { label: "Dashboard", path: "/", icon: Home },
@@ -48,13 +49,21 @@ export default function Sidebar({ isOpen, onClose }) {
   };
 
   const handleLogout = () => {
+    // Clear JWT token
     localStorage.removeItem("token");
     localStorage.removeItem("role");
+
+    // Clear cached API data
+    clearApiCache();
+
+    // Clear session data
     sessionStorage.clear();
 
+    // Clear cookie
     document.cookie =
       "sgs_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC";
 
+    // Redirect to Common Login
     window.location.href = process.env.NEXT_PUBLIC_LOGOUT_URL;
   };
 

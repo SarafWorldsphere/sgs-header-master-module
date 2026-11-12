@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 
+from app.auth import require_headmaster
 from app.database import get_db
 
 from app.controllers.headmaster_controller import (
@@ -23,33 +24,67 @@ from app.schemas.headmaster_schema import (
 
 router = APIRouter()
 
+def get_authenticated_headmaster_info(db: Session, current_user: dict):
+    user = db.execute(
+        text("""
+            SELECT
+                u.full_name AS name,
+                COALESCE(u.email_id, '') AS email
+            FROM public.sgs_users_masters u
+            JOIN public.sgs_role_response r
+                ON r.role_id = u.role_id
+            WHERE u.user_id = :user_id
+              AND u.role_id = 8
+              AND LOWER(BTRIM(r.role_name)) = 'headmaster'
+              AND u.is_active IS TRUE
+              AND LOWER(BTRIM(u.record_status)) = 'active'
+            LIMIT 1
+        """),
+        {"user_id": int(current_user["user_id"])}
+    ).mappings().first()
+
+    if not user:
+        raise HTTPException(
+            status_code=403,
+            detail="Headmaster account not authorized"
+        )
+
+    return {
+        "name": user["name"] or "",
+        "email": user["email"] or "",
+        "role": "Headmaster"
+    }
 
 # ==================================================
 # GET HEADMASTER DETAILS
 # ==================================================
 @router.get("/")
-def get_headmaster(db: Session = Depends(get_db)):
-
+def get_headmaster(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_headmaster)
+):
     query = """
         SELECT u.full_name, r.role_name
         FROM sgs_users_masters u
         JOIN sgs_role_response r ON r.role_id = u.role_id
-        WHERE LOWER(r.role_name) = 'headmaster'
-          AND u.is_active = TRUE
-          AND u.record_status = 'Active'
+        WHERE u.user_id = :user_id
+          AND u.role_id = 8
+          AND LOWER(BTRIM(r.role_name)) = 'headmaster'
+          AND u.is_active IS TRUE
+          AND LOWER(BTRIM(u.record_status)) = 'active'
         LIMIT 1
     """
 
-    row = db.execute(text(query)).mappings().fetchone()
+    row = db.execute(
+        text(query),
+        {"user_id": int(current_user["user_id"])}
+    ).mappings().fetchone()
 
     if not row:
-        return {
-            "success": True,
-            "data": {
-                "name": "",
-                "role": "Headmaster"
-            }
-        }
+        raise HTTPException(
+            status_code=403,
+            detail="Headmaster access denied"
+        )
 
     return {
         "success": True,
@@ -66,10 +101,11 @@ def get_headmaster(db: Session = Depends(get_db)):
 @router.post("/assignment-report")
 def assignment(
     payload: AssignmentReportRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_headmaster)
 ):
     data = payload.model_dump()
-    user_info = data["user_info"]
+    user_info = get_authenticated_headmaster_info(db, current_user)
 
     return get_assignment_report(db, data, user_info)
 
@@ -101,10 +137,11 @@ def get_subjects(
 @router.post("/academic-analytics")
 def academic(
     payload: AcademicAnalyticsRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_headmaster)
 ):
     data = payload.model_dump()
-    user_info = data["user_info"]
+    user_info = get_authenticated_headmaster_info(db, current_user)
 
     return get_academic_analytics(db, data, user_info)
 
@@ -115,10 +152,12 @@ def academic(
 @router.post("/teacher-performance")
 def teacher(
     payload: TeacherPerformanceRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_headmaster)
 ):
     data = payload.model_dump()
-    user_info = data["user_info"]
+    user_info = get_authenticated_headmaster_info(db, current_user)
+
 
     return get_teacher_performance(db, data, user_info)
 
@@ -1102,11 +1141,11 @@ def get_platform_recent_events(
 @router.post("/translate")
 def translate(
     payload: TranslateRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_headmaster)
 ):
     data = payload.model_dump()
-    user_info = data["user_info"]
-
+    user_info = get_authenticated_headmaster_info(db, current_user)
     return translate_for_headmaster(
         db,
         data,
