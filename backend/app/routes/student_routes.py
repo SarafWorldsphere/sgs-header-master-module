@@ -107,11 +107,11 @@ def get_students(
           AND s.full_name IS NOT NULL
           AND TRIM(s.full_name) <> ''
           AND (
-              :class_name IS NULL
+              CAST(:class_name AS TEXT) IS NULL
               OR TRIM(c.class_name) = TRIM(:class_name)
           )
           AND (
-              :section IS NULL
+              CAST(:section AS TEXT) IS NULL
               OR TRIM(
                   COALESCE(
                       NULLIF(TRIM(s.section), ''),
@@ -264,17 +264,17 @@ def get_student_assessment_report(
 
           -- Filter by assessment date's month and year.
           AND (
-              :month IS NULL
+              CAST(:month AS INTEGER) IS NULL
               OR EXTRACT(MONTH FROM a.assessment_date) = :month
           )
           AND (
-              :year IS NULL
+              CAST(:year AS INTEGER) IS NULL
               OR EXTRACT(YEAR FROM a.assessment_date) = :year
           )
 
           -- Optional subject filter.
           AND (
-              :subject IS NULL
+              CAST(:subject AS TEXT) IS NULL
               OR TRIM(a.subject) = TRIM(:subject)
           )
 
@@ -283,8 +283,8 @@ def get_student_assessment_report(
           -- so all matching CT assessments can be returned.
           AND (
               (
-                  :exam_id IS NULL
-                  AND :assessment_id IS NULL
+                  CAST(:exam_id AS BIGINT) IS NULL
+                  AND CAST(:assessment_id AS BIGINT) IS NULL
               )
               OR (
                   :exam_id IS NOT NULL
@@ -418,7 +418,7 @@ def get_consolidated_subjects(
             ON LOWER(TRIM(a.subject)) = LOWER(TRIM(sm.subject_name))
         WHERE sm.record_status = 'Active'
           AND a.record_status = 'Active'
-          AND (:class_id IS NULL OR sm.class_id = :class_id)
+          AND (CAST(:class_id AS BIGINT) IS NULL OR sm.class_id = :class_id)
         ORDER BY sm.subject_name
     """)
 
@@ -524,16 +524,16 @@ def get_consolidated_report(
               AND s.record_status = 'Active'
 
               AND (
-                  :month IS NULL
+                  CAST(:month AS INTEGER) IS NULL
                   OR EXTRACT(MONTH FROM a.assessment_date) = :month
               )
               AND (
-                  :year IS NULL
+                  CAST(:year AS INTEGER) IS NULL
                   OR EXTRACT(YEAR FROM a.assessment_date) = :year
               )
-              AND (:class_id IS NULL OR s.class_id = :class_id)
+              AND (CAST(:class_id AS BIGINT) IS NULL OR s.class_id = :class_id)
               AND (
-                  :section IS NULL
+                  CAST(:section AS TEXT) IS NULL
                   OR TRIM(
                       COALESCE(
                           NULLIF(TRIM(s.section), ''),
@@ -544,11 +544,11 @@ def get_consolidated_report(
                   ) = TRIM(:section)
               )
               AND (
-                  :subject IS NULL
+                  CAST(:subject AS TEXT) IS NULL
                   OR TRIM(a.subject) = TRIM(:subject)
               )
               AND (
-                  :assessment_id IS NULL
+                  CAST(:assessment_id AS BIGINT) IS NULL
                   OR a.assessment_id = :assessment_id
               )
               AND (
@@ -604,7 +604,7 @@ def get_consolidated_report(
             WHERE s.record_status = 'Active'
               AND s.class_id = :class_id
               AND (
-                    :section IS NULL
+                    CAST(:section AS TEXT) IS NULL
                     OR TRIM(
                         COALESCE(
                             NULLIF(TRIM(s.section), ''),
