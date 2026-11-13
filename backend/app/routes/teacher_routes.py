@@ -121,7 +121,7 @@ def get_teachers(
                         AND sm.is_active = TRUE
                         AND sm.is_class_teacher = FALSE
                         AND (
-                            :subject IS NULL
+                            CAST(:subject AS TEXT) IS NULL
                             OR LOWER(TRIM(sm.subject_name))
                                = LOWER(TRIM(:subject))
                         )
