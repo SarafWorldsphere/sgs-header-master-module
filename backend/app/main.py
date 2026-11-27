@@ -1,6 +1,12 @@
+
+from dotenv import load_dotenv
+load_dotenv()
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from saraswati_tenant import SchoolMiddleware
+from .config import settings
+
+
 
 from .routes import (
     student_routes,
@@ -11,20 +17,22 @@ from .routes import (
     headmaster_routes,
     function_routes,
     tours_routes,
+    auth_routes,
 )
-
 app = FastAPI(title="School Management API")
 
 app.add_middleware(SchoolMiddleware)
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        origin.strip()
+        for origin in settings.CORS_ALLOW_ORIGINS.split(",")
+        if origin.strip()
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 app.include_router(student_routes.router, prefix="/students", tags=["Students"])
 app.include_router(teacher_routes.router, prefix="/teachers", tags=["Teachers"])
 app.include_router(dashboard_routes.router, prefix="/dashboard", tags=["Dashboard"])
@@ -33,6 +41,11 @@ app.include_router(headmaster_routes.router, prefix="/headmaster", tags=["Headma
 app.include_router(notification_routes.router, prefix="/notifications", tags=["Notifications"])
 app.include_router(function_routes.router, prefix="/functions", tags=["Functions"])
 app.include_router(tours_routes.router, prefix="/tours", tags=["Tours"])
+app.include_router(
+    auth_routes.router,
+    prefix="/api/v1/auth",
+    tags=["Authentication"]
+)
 
 @app.get("/")
 def home():
