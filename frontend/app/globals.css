@@ -154,8 +154,8 @@ body {
    ========================================================= */
 
 .topbar {
-  display: grid;
-  grid-template-columns: 280px minmax(300px, 1fr) auto 48px;
+  display: flex;
+  justify-content: space-between;
   align-items: center;
   gap: 14px;
   width: 100%;
@@ -166,7 +166,8 @@ body {
 .profile-box {
   height: 56px;
   min-width: 0;
-  width: 100%;
+  width: auto;
+  min-width: 240px;
   padding: 0 15px;
   display: flex;
   align-items: center;
@@ -1430,8 +1431,8 @@ button.progress-class-card.active-progress-class-card .progress-class-count {
 
 @media (min-width: 901px) {
   .topbar {
-    display: grid !important;
-    grid-template-columns: 280px minmax(300px, 1fr) auto 48px !important;
+    display: flex !important;
+    justify-content: space-between !important;
     align-items: center !important;
     gap: 14px !important;
     width: 100% !important;
@@ -1444,7 +1445,8 @@ button.progress-class-card.active-progress-class-card .progress-class-count {
 
   .profile-card {
     height: 56px !important;
-    width: 100% !important;
+    width: auto !important;
+    min-width: 240px !important;
     min-width: 0 !important;
     padding: 0 15px !important;
     border-radius: 15px !important;

@@ -1,10 +1,11 @@
-﻿
-from fastapi import APIRouter, Depends, HTTPException, Query
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from saraswati_tenant.context import current_school
 
 from app.database import get_db
+from app.utils.auth_helper import resolve_logged_in_headmaster
 
 from app.controllers.headmaster_controller import (
     get_assignment_report,
@@ -39,34 +40,13 @@ def get_school_config():
 # GET HEADMASTER DETAILS
 # ==================================================
 @router.get("/")
-def get_headmaster(db: Session = Depends(get_db)):
-
-    query = """
-        SELECT u.full_name, r.role_name
-        FROM users_masters u
-        JOIN role_response r ON r.role_id = u.role_id
-        WHERE LOWER(r.role_name) = 'headmaster'
-          AND u.is_active = TRUE
-          AND u.record_status = 'Active'
-        LIMIT 1
-    """
-
-    row = db.execute(text(query)).mappings().fetchone()
-
-    if not row:
-        return {
-            "success": True,
-            "data": {
-                "name": "",
-                "role": "Headmaster"
-            }
-        }
-
+def get_headmaster(request: Request, db: Session = Depends(get_db)):
+    headmaster = resolve_logged_in_headmaster(request, db)
     return {
         "success": True,
         "data": {
-            "name": row["full_name"],
-            "role": row["role_name"]
+            "name": headmaster.get("name", "Headmaster"),
+            "role": headmaster.get("role", "Headmaster Access")
         }
     }
 

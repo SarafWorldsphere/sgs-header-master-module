@@ -1,6 +1,21 @@
+from dotenv import load_dotenv
+load_dotenv()
+
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from saraswati_tenant import SchoolMiddleware
+from saraswati_tenant.resolve import set_school_lookup, _lookup_database
+
+# Enable local development support: resolve localhost / 127.0.0.1 to dev school domain
+DEV_TENANT_DOMAIN = os.getenv("DEV_TENANT_DOMAIN", "sgs-test.swais.in")
+
+def _dev_school_lookup(domain: str):
+    if domain in ("localhost", "127.0.0.1"):
+        return _lookup_database(DEV_TENANT_DOMAIN)
+    return _lookup_database(domain)
+
+set_school_lookup(_dev_school_lookup)
 
 from .routes import (
     student_routes,
@@ -20,7 +35,13 @@ app.add_middleware(SchoolMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3001",
+    ],
+    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

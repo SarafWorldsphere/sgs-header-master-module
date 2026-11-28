@@ -12,16 +12,24 @@ import DashboardSection from "../components/DashboardSection";
 import StudentsSection from "../components/StudentsSection";
 import TeachersSection from "../components/TeachersSection";
 import ReportsSection from "../components/ReportsSection";
-import ProgressSection from "../components/ProgressSection";
 import NotificationsSection from "../components/NotificationsSection";
 import FunctionsSection from "../components/FunctionsSection";
-import ToursSection from "../components/ToursSection";
-import ClassTeachersSection from "../components/ClassTeachersSection";
 import { translateActiveTab } from "./utils/translateActiveTab";
 // ================= API SETUP =================
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
   timeout: 30000, // production safety
+});
+
+// Attach logged-in user credentials to every outgoing request
+api.interceptors.request.use((config) => {
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  }
+  return config;
 });
 
 // ================= MAIN PAGE =================
@@ -529,17 +537,6 @@ useEffect(() => {
 )}
 
 
-        {activeTab === "progress" && (
-          <ProgressSection
-            progressData={searchItems(progressData, [
-              "full_name",
-              "exam_name",
-              "subject_name",
-              "grade",
-              "remarks",
-            ])}
-          />
-        )}
         {activeTab === "reports" && (
   <ReportsSection />
 )}
@@ -559,24 +556,6 @@ useEffect(() => {
     functionsData={searchItems(functionsData, [
       "function_name",
       "description",
-    ])}
-  />
-)}
-
-{activeTab === "tours" && (
-  <ToursSection
-    toursData={searchItems(toursData, [
-      "tour_name",
-      "destination",
-    ])}
-  />
-)}
-
-{activeTab === "classTeachers" && (
-  <ClassTeachersSection
-    classTeachers={searchItems(classTeachers, [
-      "teacher_name",
-      "class_name",
     ])}
   />
 )}

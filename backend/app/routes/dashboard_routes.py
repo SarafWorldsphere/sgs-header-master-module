@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 
 from app.database import get_db
+from app.utils.auth_helper import resolve_logged_in_headmaster
 
 router = APIRouter()
 
@@ -67,22 +68,22 @@ SELECT
     (SELECT row_to_json(summary) FROM summary) AS summary,
     (SELECT data FROM performance) AS performance,
     (SELECT row_to_json(pass_fail) FROM pass_fail) AS pass_fail,
-    '{}'::json AS headmaster,
     (SELECT unread_count FROM notifications) AS unread_count;
 """
 
 # ================= API =================
 @router.get("/")
-def dashboard_core(db: Session = Depends(get_db)):
+def dashboard_core(request: Request, db: Session = Depends(get_db)):
 
     result = db.execute(text(DASHBOARD_QUERY)).mappings().fetchone()
+    headmaster = resolve_logged_in_headmaster(request, db)
 
     if not result:
         return {
             "summary": {},
             "performance": [],
             "pass_fail": [{"name": "Pass", "value": 0}, {"name": "Fail", "value": 0}],
-            "headmaster": {},
+            "headmaster": headmaster,
             "unread_count": 0
         }
 
@@ -97,6 +98,6 @@ def dashboard_core(db: Session = Depends(get_db)):
             {"name": "Pass", "value": pass_fail.get("pass_count", 0)},
             {"name": "Fail", "value": pass_fail.get("fail_count", 0)}
         ],
-        "headmaster": row.get("headmaster") or {},
+        "headmaster": headmaster,
         "unread_count": row.get("unread_count") or 0
     }

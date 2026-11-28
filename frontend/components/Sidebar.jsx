@@ -1,4 +1,4 @@
-﻿
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -13,8 +13,6 @@ import {
   Bell,
   BellRing,
   CalendarDays,
-  MapPinned,
-  UserCheck,
   LogOut,
   Activity,
 } from "lucide-react";
@@ -80,11 +78,8 @@ export default function Sidebar({
     { id: "reports", label: "Reports", icon: FileText },
     { id: "coverage", label: "Syllabus Coverage", icon: TrendingUp },
     { id: "teacherAlerts", label: "Teacher Alerts", icon: BellRing },
-    { id: "progress", label: "Progress", icon: TrendingUp },
     { id: "notifications", label: "Notifications", icon: Bell },
     { id: "functions", label: "Functions", icon: CalendarDays },
-    { id: "tours", label: "Tours", icon: MapPinned },
-    { id: "classTeachers", label: "Class Teachers", icon: UserCheck },
     { id: "platformActivity", label: "Platform Activity", icon: Activity },
     { id: "logout", label: "Logout", icon: LogOut, danger: true },
   ];
