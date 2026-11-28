@@ -1,0 +1,103 @@
+from fastapi import APIRouter, Depends, Request
+from sqlalchemy.orm import Session
+from sqlalchemy import text
+
+from app.database import get_db
+from app.utils.auth_helper import resolve_logged_in_headmaster
+
+router = APIRouter()
+
+# ================= OPTIMIZED QUERY =================
+DASHBOARD_QUERY = """
+WITH
+summary AS (
+    SELECT
+       (
+    SELECT COUNT(*)
+    FROM student_master
+    WHERE record_status = 'Active'
+      AND full_name IS NOT NULL
+      AND full_name != ''
+) AS total_students,
+        (SELECT COUNT(*) FROM teacher_master WHERE is_active = TRUE) AS total_teachers,
+        (SELECT COUNT(*) FROM class_master WHERE record_status = 'Active') AS total_classes,
+        (SELECT ROUND(AVG(marks_obtained), 2)
+         FROM student_marks
+         WHERE record_status = 'Active') AS average_marks,
+        (SELECT ROUND(
+            (SUM(CASE WHEN marks_obtained >= 33 THEN 1 ELSE 0 END)::numeric /
+             NULLIF(COUNT(*), 0)) * 100,
+            2
+        )
+         FROM student_marks
+         WHERE record_status = 'Active') AS pass_percentage
+),
+performance AS (
+    SELECT COALESCE(json_agg(t), '[]'::json) AS data
+    FROM (
+        SELECT
+            c.class_name,
+            c.section_name,
+            ROUND(
+                AVG((m.marks_obtained / NULLIF(m.max_marks, 0)) * 100),
+                2
+            ) AS percentage
+        FROM student_marks m
+        JOIN student_master s ON m.student_id = s.student_id
+        JOIN class_master c ON s.class_id = c.class_id
+        WHERE m.record_status = 'Active'
+        GROUP BY c.class_name, c.section_name
+        ORDER BY c.class_name, c.section_name
+    ) t
+),
+pass_fail AS (
+    SELECT
+        SUM(CASE WHEN marks_obtained >= 33 THEN 1 ELSE 0 END) AS pass_count,
+        SUM(CASE WHEN marks_obtained < 33 THEN 1 ELSE 0 END) AS fail_count
+    FROM student_marks
+    WHERE record_status = 'Active'
+),
+
+notifications AS (
+    SELECT COUNT(*) AS unread_count
+    FROM notice_board
+    WHERE is_read = FALSE
+)
+
+SELECT
+    (SELECT row_to_json(summary) FROM summary) AS summary,
+    (SELECT data FROM performance) AS performance,
+    (SELECT row_to_json(pass_fail) FROM pass_fail) AS pass_fail,
+    (SELECT unread_count FROM notifications) AS unread_count;
+"""
+
+# ================= API =================
+@router.get("/")
+def dashboard_core(request: Request, db: Session = Depends(get_db)):
+
+    result = db.execute(text(DASHBOARD_QUERY)).mappings().fetchone()
+    headmaster = resolve_logged_in_headmaster(request, db)
+
+    if not result:
+        return {
+            "summary": {},
+            "performance": [],
+            "pass_fail": [{"name": "Pass", "value": 0}, {"name": "Fail", "value": 0}],
+            "headmaster": headmaster,
+            "unread_count": 0
+        }
+
+    row = dict(result)
+
+    pass_fail = row.get("pass_fail") or {}
+
+    return {
+        "summary": row.get("summary") or {},
+        "performance": row.get("performance") or [],
+        "pass_fail": [
+            {"name": "Pass", "value": pass_fail.get("pass_count", 0)},
+            {"name": "Fail", "value": pass_fail.get("fail_count", 0)}
+        ],
+        "headmaster": headmaster,
+        "unread_count": row.get("unread_count") or 0
+    }

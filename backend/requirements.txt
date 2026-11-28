@@ -1,0 +1,10 @@
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+psycopg[binary]==3.3.4
+
+sqlalchemy
+psycopg2-binary
+python-dotenv
+google-genai
+pydantic-settings
+saraswati-tenant @ git+https://github.com/SarafWorldsphere/saraswati-tenant-kit.git@fcfe483acd88a58c3aefdf862ae3ebbbd7af4955#subdirectory=python
