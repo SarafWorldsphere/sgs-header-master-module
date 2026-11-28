@@ -11,6 +11,7 @@ from .routes import (
     headmaster_routes,
     function_routes,
     tours_routes,
+    school_routes,
 )
 
 app = FastAPI(title="School Management API")
@@ -33,6 +34,7 @@ app.include_router(headmaster_routes.router, prefix="/headmaster", tags=["Headma
 app.include_router(notification_routes.router, prefix="/notifications", tags=["Notifications"])
 app.include_router(function_routes.router, prefix="/functions", tags=["Functions"])
 app.include_router(tours_routes.router, prefix="/tours", tags=["Tours"])
+app.include_router(school_routes.router, tags=["School"])
 
 @app.get("/")
 def home():

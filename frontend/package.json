@@ -3,12 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
-  },
+  "dev": "next dev --webpack",
+  "build": "next build --webpack",
+  "start": "next start",
+  "lint": "eslint"
+},
   "dependencies": {
+    "@saraswati/tenant-kit": "github:SarafWorldsphere/saraswati-tenant-kit#main",
     "axios": "^1.16.1",
     "lucide-react": "^1.14.0",
     "next": "16.2.4",
