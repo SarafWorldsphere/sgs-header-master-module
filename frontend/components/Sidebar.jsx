@@ -1,20 +1,26 @@
-﻿import { useState } from "react";
+﻿
+"use client";
+
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+
 import {
   Home,
   Users,
   GraduationCap,
-  FileText ,
+  FileText,
   TrendingUp,
   Bell,
+  BellRing,
   CalendarDays,
   MapPinned,
   UserCheck,
   LogOut,
   Activity,
 } from "lucide-react";
-import Image from "next/image";
+
 import LogoutModal from "@/components/LogoutModal";
+
 export default function Sidebar({
   activeTab,
   setActiveTab,
@@ -23,32 +29,71 @@ export default function Sidebar({
 }) {
   const router = useRouter();
 
-  // âœ… ADD STATE FOR MODAL
   const [showLogout, setShowLogout] = useState(false);
+
+  // Dynamic school branding
+  const [schoolConfig, setSchoolConfig] = useState({
+    schoolName: "School Dashboard",
+    shortName: "School",
+    logoUrl: null,
+  });
+
+  useEffect(() => {
+    const fetchSchoolConfig = async () => {
+      try {
+        const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+
+        const response = await fetch(
+          `${baseUrl}/headmaster/school-config`,
+          {
+            method: "GET",
+            cache: "no-store",
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(
+            `School config API failed: ${response.status}`
+          );
+        }
+
+        const result = await response.json();
+
+        if (result.success && result.data) {
+          setSchoolConfig((previous) => ({
+            ...previous,
+            ...result.data,
+          }));
+        }
+      } catch (error) {
+        console.error("School config fetch error:", error);
+      }
+    };
+
+    fetchSchoolConfig();
+  }, []);
 
   const menuItems = [
     { id: "dashboard", label: "Dashboard", icon: Home },
     { id: "students", label: "Students", icon: Users },
     { id: "teachers", label: "Teachers", icon: GraduationCap },
     { id: "reports", label: "Reports", icon: FileText },
+    { id: "coverage", label: "Syllabus Coverage", icon: TrendingUp },
+    { id: "teacherAlerts", label: "Teacher Alerts", icon: BellRing },
     { id: "progress", label: "Progress", icon: TrendingUp },
     { id: "notifications", label: "Notifications", icon: Bell },
     { id: "functions", label: "Functions", icon: CalendarDays },
     { id: "tours", label: "Tours", icon: MapPinned },
     { id: "classTeachers", label: "Class Teachers", icon: UserCheck },
     { id: "platformActivity", label: "Platform Activity", icon: Activity },
-
-    // logout item stays same
     { id: "logout", label: "Logout", icon: LogOut, danger: true },
   ];
 
-  // âœ… LOGOUT LOGIC
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("role");
     sessionStorage.clear();
 
-    // clear cookie (if used)
     document.cookie =
       "sgs_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC";
 
@@ -57,43 +102,67 @@ export default function Sidebar({
 
   const handleClick = (item) => {
     if (item.id === "logout") {
-      setShowLogout(true); // âœ… open modal instead of confirm
+      setShowLogout(true);
       return;
     }
 
-   if (item.id === "platformActivity") {
-     router.push("/platform-activity");
-     if (window.innerWidth <= 900) onClose();
-     return;
-   }
-   setActiveTab(item.id);
+    if (item.id === "coverage") {
+      setActiveTab("coverage");
+      router.push("/coverage");
 
-if (window.innerWidth <= 900) {
-  onClose();
-}
+      if (window.innerWidth <= 900) onClose();
+      return;
+    }
+
+    if (item.id === "teacherAlerts") {
+      setActiveTab("teacherAlerts");
+      router.push("/teacher-alerts");
+
+      if (window.innerWidth <= 900) onClose();
+      return;
+    }
+
+    if (item.id === "platformActivity") {
+      setActiveTab("platformActivity");
+      router.push("/platform-activity");
+
+      if (window.innerWidth <= 900) onClose();
+      return;
+    }
+
+    setActiveTab(item.id);
+
+    if (window.innerWidth <= 900) {
+      onClose();
+    }
   };
 
   return (
     <>
       <div className={`sidebar ${isOpen ? "open" : ""}`}>
         <div>
-          {/* BRAND */}
-        <div className="brand-box">
-  <div className="logo-circle">
-    <img
-      src="/headmaster/school-logo.jpeg"
-      alt="SGS Logo"
-      width={80}
-      height={80}
-      className="school-logo"
-    />
-  </div>
+          {/* Dynamic School Branding */}
+          <div className="brand-box">
+            <div className="logo-circle">
+              {schoolConfig.logoUrl ? (
+                <img
+                  src={schoolConfig.logoUrl}
+                  alt={`${schoolConfig.schoolName} Logo`}
+                  className="school-logo"
+                />
+              ) : (
+                <GraduationCap
+                  size={46}
+                  color="#1e3a8a"
+                  strokeWidth={1.8}
+                />
+              )}
+            </div>
 
-  <h2>SGS SCHOOL</h2>
-  <p>Headmaster Dashboard</p>
-</div>
+            <h2>{schoolConfig.schoolName}</h2>
+            <p>Headmaster Dashboard</p>
+          </div>
 
-          {/* MENU */}
           <div className="menu-list">
             {menuItems.map((item) => {
               const Icon = item.icon;
@@ -114,14 +183,14 @@ if (window.innerWidth <= 900) {
           </div>
         </div>
       </div>
-      {isOpen && (
-  <div
-    className="sidebar-overlay"
-    onClick={onClose}
-  />
-)}
 
-      {/* âœ… LOGOUT MODAL (ADD HERE - OUTSIDE SIDEBAR DIV) */}
+      {isOpen && (
+        <div
+          className="sidebar-overlay"
+          onClick={onClose}
+        />
+      )}
+
       <LogoutModal
         open={showLogout}
         onCancel={() => setShowLogout(false)}
@@ -130,5 +199,3 @@ if (window.innerWidth <= 900) {
     </>
   );
 }
-
-

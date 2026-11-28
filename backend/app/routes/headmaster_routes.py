@@ -1,6 +1,8 @@
-﻿from fastapi import APIRouter, Depends, HTTPException, Query
+﻿
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import text
+from saraswati_tenant.context import current_school
 
 from app.database import get_db
 
@@ -22,6 +24,16 @@ from app.schemas.headmaster_schema import (
 
 router = APIRouter()
 
+@router.get("/school-config")
+def get_school_config():
+    try:
+        school = current_school()
+        return {
+            "success": True,
+            "data": school.public_config()
+        }
+    except RuntimeError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 # ==================================================
 # GET HEADMASTER DETAILS
